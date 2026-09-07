@@ -121,35 +121,96 @@ function Get-RoadmapTasks {
         return $tasks
     }
 
-    # Read with UTF-8 to handle em-dashes and other unicode in headings
+    # Read with UTF-8 to handle em-dashes and other unicode in headings.
+    # The roadmap is structured as:
+    #   ## Phase N - Name        (also matches "## Phase N — Name")
+    #   ### Sprint N - ...       (optional subdivision)
+    #   - Task / - [ ] Task      (ordered list of implementation tasks)
+    # Only list-item bullets under a phase/sprint heading are tasks. Headings,
+    # blank lines, prose paragraphs, and narrative text are ignored.
     $lines = [System.IO.File]::ReadAllLines($script:RoadmapFile, [System.Text.Encoding]::UTF8)
-    $currentPhase = ""
+    $phaseNum = 0
+    $phaseName = ""
+    $sprintName = ""
+    $taskCountInPhase = 0
 
     foreach ($line in $lines) {
-        # Match "## Phase N <anything including em-dash and name>"
-        if ($line -match '^##+?\s+Phase\s+(\d+)') {
-            $phaseNum = $Matches[1]
-            # Capture any text after the phase number (em-dash + name)
-            $rest = $line -replace '^##+?\s+Phase\s+\d+\s*', ''
-            $rest = $rest.Trim().TrimStart('-', [char]0x2014, [char]0x2013, [char]0x2012).Trim()
-            $currentPhase = "Phase $phaseNum - $rest"
+        $trimmed = $line.Trim()
+
+        # Phase heading: "## Phase N ..." (any sub-heading level 2+)
+        if ($trimmed -match '^#{2,}\s+Phase\s+(\d+)') {
+            $phaseNum = [int]$Matches[1]
+            $caption = $trimmed -replace '^#{2,}\s+Phase\s+\d+\s*', ''
+            $caption = $caption.TrimStart('-', [char]0x2014, [char]0x2013, [char]0x2012).Trim()
+            $phaseName = $caption
+            $sprintName = ""
+            $taskCountInPhase = 0
+            continue
         }
-        elseif ($line -match '^###\s+Sprint\s+(\d+)' -or
-                $line -match '^##\s+Sprint\s+(\d+)') {
-            $sprintLine = $line -replace '^#+\s*', ''
-            $currentPhase = $sprintLine.Trim()
+
+        # Sprint sub-heading: "### Sprint N ..." (or "## Sprint N ...")
+        if ($trimmed -match '^#{2,}\s+Sprint\s+(\d+)') {
+            $sprintCaption = $trimmed -replace '^#{2,}\s+Sprint\s+\d+\s*', ''
+            $sprintCaption = $sprintCaption.TrimStart('-', [char]0x2014, [char]0x2013, [char]0x2012).Trim()
+            $sprintName = $sprintCaption
+            $taskCountInPhase = 0
+            continue
         }
-        elseif ($line -match '^\s*-\s+(.+)' -and $currentPhase) {
-            $taskDesc = $Matches[1].Trim()
+
+        # List-item bullet => candidate task. Leading "Phase 0 - Foundation:" style
+        # prefixes and any trailing " - description" narrative are not part of the task.
+        if ($trimmed -match '^[-*]\s+(.+)$' -and $phaseNum -gt 0) {
+            $desc = $Matches[1].Trim()
+            # A task is a concise item. Skip verbose/narrative bullets (long prose
+            # sentences that are clearly descriptive rather than implementation tasks).
+            $desc = $desc -replace '^\[\s\]\s*', ''  # allow bare "- [ ] Task"
+            if ($desc.Length -eq 0 -or $desc.Length -gt 140) {
+                continue
+            }
+            $taskCountInPhase++
+            if ($sprintName) {
+                $context = "Phase $phaseNum - $phaseName / $sprintName"
+            } else {
+                $context = "Phase $phaseNum - $phaseName"
+            }
             $tasks += @{
-                Phase = $currentPhase
-                Description = $taskDesc
-                Full = "${currentPhase}: ${taskDesc}"
+                Phase       = $context
+                PhaseNumber = $phaseNum
+                Number      = $taskCountInPhase
+                Description = $desc
+                Full        = "Phase $phaseNum - ${phaseName}: $desc"
             }
         }
     }
 
     return $tasks
+}
+
+# Return the ordered implementation tasks for a specific phase number.
+function Get-PhaseTasks {
+    param([int]$PhaseNumber)
+    $all = Get-RoadmapTasks
+    return @($all | Where-Object { $_.PhaseNumber -eq $PhaseNumber })
+}
+
+# Strict, normalized completion match: true if the task description equals (or
+# the completed entry equal to) the task text after normalization. Uses word
+# boundaries and case-insensitive comparison to avoid false matches from
+# narrative text that merely contains a task phrase as a substring.
+function Test-TaskIsCompleted {
+    param([string]$TaskDescription, [array]$Completed)
+    $normTask = $TaskDescription.Trim().ToLowerInvariant()
+    foreach ($c in $Completed) {
+        if (-not $c) { continue }
+        $norm = $c.Trim().ToLowerInvariant()
+        # Exact match first.
+        if ($norm -eq $normTask) { return $true }
+        # Word-boundary containment: e.g. completed "today dashboard" matches
+        # task "Today dashboard" but not a narrative "dashboard for the week".
+        $pattern = "\b" + [regex]::Escape($normTask) + "\b"
+        if ($norm -match $pattern -and $normTask.Length -gt 3) { return $true }
+    }
+    return $false
 }
 
 function Get-NextTask {
@@ -161,18 +222,11 @@ function Get-NextTask {
         return $null
     }
 
+    # Roadmap tasks are already returned in file order, which is the canonical
+    # phase -> sprint -> task ordering. Walk them in order and return the first
+    # not-yet-completed task.
     foreach ($task in $roadmap) {
-        $isComplete = $false
-        foreach ($c in $completed) {
-            if ($c -match [regex]::Escape($task.Description) -or
-                $task.Full -match [regex]::Escape($c) -or
-                $task.Description -match [regex]::Escape($c)) {
-                $isComplete = $true
-                break
-            }
-        }
-
-        if (-not $isComplete) {
+        if (-not (Test-TaskIsCompleted -TaskDescription $task.Description -Completed $completed)) {
             return $task
         }
     }
@@ -294,6 +348,19 @@ function Invoke-OpenCode {
 #  4. VALIDATION
 # =============================================================================
 
+# Ordered validation stages. The Build stage must be a real Flutter compile
+# check: `flutter build bundle` compiles the app's Dart into a kernel bundle
+# without requiring a mobile SDK, and is valid in this Flutter environment.
+# Standalone `dart compile` cannot compile Flutter code because it lacks dart:ui.
+function Get-ValidationChecks {
+    return @(
+        @{ Name = "Format";  Cmd = "dart"; Args = @("format","--output=none",".") }
+        @{ Name = "Analyze"; Cmd = "dart"; Args = @("analyze","lib/") }
+        @{ Name = "Test";    Cmd = "flutter"; Args = @("test") }
+        @{ Name = "Build";   Cmd = "flutter"; Args = @("build","bundle") }
+    )
+}
+
 function Invoke-Validation {
     $results = @{
         Format  = @{ Pass = $false; Output = "" }
@@ -302,12 +369,7 @@ function Invoke-Validation {
         Build   = @{ Pass = $false; Output = "" }
     }
 
-    $checks = @(
-        @{ Name = "Format";  Cmd = "dart"; Args = @("format","--output=none",".") }
-        @{ Name = "Analyze"; Cmd = "dart"; Args = @("analyze","lib/") }
-        @{ Name = "Test";    Cmd = "flutter"; Args = @("test") }
-        @{ Name = "Build";   Cmd = "dart"; Args = @("analyze","lib/") }
-    )
+    $checks = Get-ValidationChecks
 
     foreach ($check in $checks) {
         Write-Log "Validation: $($check.Name)..."
@@ -703,19 +765,92 @@ function Invoke-DryRun {
         $originalProgress = [System.IO.File]::ReadAllText($script:ProgressFile)
     }
 
-    # TEST 1: Task Discovery
+    # TEST 1: Task Discovery + Roadmap Ordering
     Write-Log "" "DRY"
-    Write-Log "TEST 1: Task Discovery" "DRY"
-    $nextTask = Get-NextTask
-    if ($nextTask) {
-        Write-Log "  FOUND: $($nextTask.Full)" "DRY"
+    Write-Log "TEST 1: Task Discovery + Roadmap Ordering" "DRY"
+    $allTasks = Get-RoadmapTasks
+    Write-Log "  Roadmap total tasks: $($allTasks.Count)" "DRY"
+    # Tasks must be returned in canonical order (i.e. non-empty and ordered by file).
+    if ($allTasks.Count -gt 0) {
+        Write-Log "  First task: $($allTasks[0].Full)" "DRY"
         $testsPassed++
     } else {
-        Write-Log "  No next task found (all completed or roadmap empty)." "DRY"
+        Write-Log "  Task discovery found no tasks." "DRY"
         if (Test-Path $script:RoadmapFile) { $testsPassed++ } else { $testsFailed++ }
     }
 
-    # TEST 2: Checkpoint State
+    # TEST 1b: Phase 1 - Daily Core resolves to exactly the 6 ordered tasks.
+    Write-Log "" "DRY"
+    Write-Log "TEST 1b: Phase 1 - Daily Core task resolution" "DRY"
+    $phase1Tasks = Get-PhaseTasks -PhaseNumber 1
+    $expectedPhase1 = @(
+        "Today dashboard",
+        "Recurring schedule",
+        "Activity model",
+        "Activity completion",
+        "Calendar/history",
+        "Add activity"
+    )
+    $phase1Title = [string]::Join(" | ", @($phase1Tasks | ForEach-Object { $_.Description }))
+    Write-Log "  Phase 1 tasks ($($phase1Tasks.Count)): $phase1Title" "DRY"
+    $phase1Ok = $true
+    if ($phase1Tasks.Count -eq $expectedPhase1.Count) {
+        for ($i = 0; $i -lt $expectedPhase1.Count; $i++) {
+            if ($phase1Tasks[$i].Description -ne $expectedPhase1[$i]) {
+                $phase1Ok = $false
+                $gotOne = $phase1Tasks[$i].Description
+                $expOne = $expectedPhase1[$i]
+                Write-Log "  ORDER MISMATCH at index ${i}: got '$gotOne' expected '$expOne'" "DRY"
+            }
+        }
+    } else {
+        $phase1Ok = $false
+        $gotCount = $phase1Tasks.Count
+        $expCount = $expectedPhase1.Count
+        Write-Log "  COUNT MISMATCH: got $gotCount expected $expCount" "DRY"
+    }
+    if ($phase1Ok) {
+        Write-Log "  Phase 1 - Daily Core resolves to 6 ordered tasks: PASS" "DRY"
+        $testsPassed++
+    } else {
+        Write-Log "  Phase 1 - Daily Core resolution: FAIL" "DRY"
+        $testsFailed++
+    }
+
+    # TEST 1c: Completed-task skipping resolves the correct next task.
+    Write-Log "" "DRY"
+    Write-Log "TEST 1c: Completed-task skipping" "DRY"
+    $skipOk = $true
+    # Next task with nothing completed down to "recurring schedule" complete
+    # should resolve to "Activity model" (3rd Phase 1 task).
+    if ($phase1Tasks.Count -gt 2) {
+        $partialComplete = @($phase1Tasks[0].Description, $phase1Tasks[1].Description)
+        $resolved = $null
+        foreach ($t in $phase1Tasks) {
+            if (-not (Test-TaskIsCompleted -TaskDescription $t.Description -Completed $partialComplete)) {
+                $resolved = $t; break
+            }
+        }
+        if ($resolved -and $resolved.Description -eq $phase1Tasks[2].Description) {
+            Write-Log "  Skip completed, resolve next: $($resolved.Description) : PASS" "DRY"
+            $testsPassed++
+        } else {
+            Write-Log "  Skip completed resolution: FAIL (got '$($resolved.Description)')" "DRY"
+            $testsFailed++
+            $skipOk = $false
+        }
+    }
+    # Narrative text must NOT be treated as completing a task (no false match).
+    $narrative = @("dashboard for the weekly review", "phase 1 - daily core", "recurring schedule details")
+    if ($skipOk -and -not (Test-TaskIsCompleted -TaskDescription ($phase1Tasks[0].Description) -Completed $narrative)) {
+        Write-Log "  Narrative text does not falsely complete a task: PASS" "DRY"
+        $testsPassed++
+    } elseif ($skipOk) {
+        Write-Log "  Narrative text falsely completed a task: FAIL" "DRY"
+        $testsFailed++
+    }
+
+    # TEST 2: Checkpoint State (resume/recovery)
     Write-Log "" "DRY"
     Write-Log "TEST 2: Checkpoint State Handling" "DRY"
     $checkpoint = Read-Checkpoint
@@ -739,9 +874,9 @@ function Invoke-DryRun {
         }
     }
 
-    # TEST 3: Validation Flow (dry - test syntax only)
+    # TEST 3: Validation Flow (includes verifying real Build stage)
     Write-Log "" "DRY"
-    Write-Log "TEST 3: Validation Flow (syntax check)" "DRY"
+    Write-Log "TEST 3: Validation Flow + real Build stage" "DRY"
     $testResults = @{
         Format  = @{ Pass = $true; Output = "dry-run" }
         Analyze = @{ Pass = $true; Output = "dry-run" }
@@ -756,6 +891,30 @@ function Invoke-DryRun {
     } else {
         Write-Log "  Validation logic: FAIL" "DRY"
         $testsFailed++
+    }
+    # Verify the Build validation stage is a real Flutter compile check
+    # (flutter build bundle), not a duplicate dart analyze.
+    $checks = Get-ValidationChecks
+    $buildCheck = $checks | Where-Object { $_.Name -eq "Build" }
+    if ($buildCheck -and $buildCheck.Cmd -eq "flutter" -and
+        ($buildCheck.Args -join " ") -match "^build\s+bundle") {
+        Write-Log "  Build stage is 'flutter build bundle' (real compile): PASS" "DRY"
+        $testsPassed++
+    } else {
+        Write-Log "  Build stage is NOT a real Flutter compile check: FAIL" "DRY"
+        $testsFailed++
+    }
+
+    # TEST 3b: Get-NextTask resolution honors completion + ordering end-to-end.
+    Write-Log "" "DRY"
+    Write-Log "TEST 3b: Get-NextTask end-to-end resolution" "DRY"
+    $nextTask = Get-NextTask
+    if ($nextTask) {
+        Write-Log "  Next task: $($nextTask.Full)" "DRY"
+        $testsPassed++
+    } else {
+        Write-Log "  No next task (all completed or roadmap empty)." "DRY"
+        if (Test-Path $script:RoadmapFile) { $testsPassed++ } else { $testsFailed++ }
     }
 
     # TEST 4: Review Decision Parsing
@@ -829,14 +988,9 @@ function Invoke-DryRun {
     $completedTasks = Get-CompletedTasks
     $remainingTasks = @()
     foreach ($t in $allTasks) {
-        $isDone = $false
-        foreach ($c in $completedTasks) {
-            if ($c -match [regex]::Escape($t.Description) -or
-                $t.Description -match [regex]::Escape($c)) {
-                $isDone = $true; break
-            }
+        if (-not (Test-TaskIsCompleted -TaskDescription $t.Description -Completed $completedTasks)) {
+            $remainingTasks += $t
         }
-        if (-not $isDone) { $remainingTasks += $t }
     }
     Write-Log "  Roadmap tasks total: $($allTasks.Count)" "DRY"
     Write-Log "  Completed: $($completedTasks.Count)" "DRY"

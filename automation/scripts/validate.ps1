@@ -7,7 +7,7 @@
     1. Dart format check
     2. Dart analyze
     3. Flutter test (uses Flutter test runner)
-    4. Flutter analyze
+    4. Flutter build (compile check via `flutter build bundle`)
 
     Returns exit code 0 if all pass, 1 if any fail.
     Has safe failure handling and explicit result reporting.
@@ -104,8 +104,11 @@ function Invoke-AllValidation {
     # 3. Test (flutter test)
     Invoke-Check -Name "Test" -Command "flutter" -Arguments @("test")
 
-    # 4. Flutter analyze (build/static check)
-    Invoke-Check -Name "Flutter Analyze" -Command "flutter" -Arguments @("analyze")
+    # 4. Build (real Flutter compile check). `flutter build bundle` compiles the
+    #    app's Dart into a kernel bundle without requiring a mobile SDK. It is a
+    #    valid compile check in this environment; standalone `dart compile`
+    #    cannot compile Flutter code (no dart:ui).
+    Invoke-Check -Name "Build" -Command "flutter" -Arguments @("build","bundle")
 
     Write-Log "=== Validation Complete ==="
 

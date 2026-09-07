@@ -65,7 +65,7 @@ After implementation, the following must pass:
 - `dart format --output=none .` (0 files changed)
 - `dart analyze lib/` (no issues)
 - `flutter test` (all tests pass)
-- `flutter analyze` (no issues)
+- `flutter build bundle` (real Flutter compile check; needs no mobile SDK)
 
 > Note: Use `flutter test` (not `dart test`) because `dart test` pulls in the
 > Flutter framework and triggers Dart SDK 3.13.2 compatibility errors in this

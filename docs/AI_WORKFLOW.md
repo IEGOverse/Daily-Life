@@ -48,8 +48,8 @@ Continue to Next Task or Stop
 ### Stage 3: Validate
 1. Run `dart format --output=none .`
 2. Run `dart analyze lib/`
-3. Run `dart test`
-4. Run `dart compile kernel lib/main.dart` or `flutter analyze`
+3. Run `flutter test`
+4. Run `flutter build bundle` (a real Flutter compile check that needs no mobile SDK; `dart compile` cannot compile Flutter code because it lacks `dart:ui`)
 5. Any failure triggers Stage 4 (Fix).
 
 ### Stage 4: Fix & Retry

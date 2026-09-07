@@ -34,12 +34,13 @@ opencode:
 # NOTE: flutter test is used instead of dart test. dart test pulls in the
 # Flutter framework and triggers Dart SDK 3.13.2 compatibility errors.
 # flutter test runs the same test suite correctly.
+# Build uses `flutter build bundle` (a real Flutter compile check that needs no
+# mobile SDK). Standalone `dart compile` cannot compile Flutter code (no dart:ui).
 validation:
   format: "dart format --output=none ."
   analyze: "dart analyze lib/"
   test: "flutter test"
-  flutter_analyze: "flutter analyze"
-  build: "flutter analyze"
+  build: "flutter build bundle"
   # All must pass for validation to succeed
 
 # Review configuration

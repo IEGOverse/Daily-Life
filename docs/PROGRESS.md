@@ -60,33 +60,26 @@ IN PROGRESS
 ## Verification Results
 - `dart analyze lib/`: No issues found
 - `dart format --output=none .`: 0 changes
-- `flutter test`: +4: All tests passed
-- `flutter analyze`: No issues found
+- `flutter test`: All tests passed
+- `flutter build bundle`: Compiles successfully (real Flutter compile check, no mobile SDK needed)
 - `build_runner`: 38 outputs generated successfully
-- `dart compile kernel`: Requires Flutter Dart SDK (dart:ui unavailable on Dart VM — expected)
-- `dart test`: Includes Flutter framework files (SDK compatibility issue, not code-level)
 
 ## Current Task
-Sprint 0 complete. Orchestrator foundation review fixes COMPLETE — self-test passes (10/10), validation passes (4/4). Awaiting final review before Sprint 1.
+Sprint 0 complete. Orchestrator foundation review round 2 fixes COMPLETE — self-test passes (15/15), validation passes (4/4 including real `flutter build bundle`). Awaiting final review before Sprint 1.
 
 ## Next Task
 Sprint 1: Implement Dashboard/Today screen logic with actual data from drift database.
 
-## Orchestrator Review — CHANGES REQUIRED (COMPLETE)
-The autonomous orchestrator foundation was returned CHANGES REQUIRED. The following
-mandatory fixes were applied and verified (self-test passes, validation passes).
-Sprint 1 must NOT start until this section is reviewed and approved.
+## Orchestrator Review — Round 2 Fixes (COMPLETE)
+Second round of orchestrator review fixes applied and verified. Sprint 1 must NOT
+start until this section is reviewed and approved.
 
-1. [x] REAL task discovery — parse ROADMAP.md + PROGRESS.md, find next incomplete approved task (no placeholder text). Verified: next task resolves to "Phase 1 - Daily Core: Today dashboard"
-2. [x] REAL autonomous loop — continue task → implementation → validation → review → checkpoint → next task
-3. [x] REAL review gate — machine-readable decision (APPROVED / APPROVED_WITH_FOLLOW_UP / CHANGES_REQUIRED / HUMAN_DECISION_REQUIRED), all 5 parse cases pass
-4. [x] CHECKPOINT — update PROGRESS.md, persist checkpoint.json, create focused git commit; never commit unreviewed work
-5. [x] REPORTING — generate report per checkpoint/sprint with task, status, summary, validation, review, fixes, debt, next task, human decision
-6. [x] STATE/RESUME — checkpoint.json with sprint, task, status, retry counters, review result, validation result, timestamp, stop reason
-7. [x] SAFETY — preserve retry/task/consecutive-failure limits (3/10/50/3), hard stop on human decision and critical blocker
-8. [x] DO NOT start Sprint 1 yet — awaiting orchestrator review approval
-9. [x] SELF-TEST — dry-run mode demonstrates discovery, state, validation, review parsing, retry, hard stop, next-task progression (10/10 pass)
-10. [x] ENVIRONMENT — verified OpenCode CLI 1.18.18 invocation flags (run/--agent/--format json; NOT --task/--context/--skill)
+### Round 2 — Fixes Applied
+1. [x] TASK DISCOVERY — Structured parser understands roadmap structure (## Phase N → ordered tasks); returns tasks with PhaseNumber + Number; Get-PhaseTasks helper; only counts list-item bullets (not narrative/prose); skips verbose bullets (>140 chars)
+2. [x] VALIDATION BUILD CHECK — Replaced duplicate `dart analyze lib/` with real `flutter build bundle` (a valid Flutter compile check needing no mobile SDK). Updated run-task.ps1, validate.ps1, workflow.yaml, docs (AI_WORKFLOW.md, AI_REVIEW.md, developer.md)
+3. [x] SELF-TEST — Expanded to 15 tests: roadmap ordering (TEST 1), Phase 1 - Daily Core 6-task resolution (TEST 1b), completed-task skipping + narrative false-match prevention (TEST 1c), validation flow + real Build stage assertion (TEST 3), Get-NextTask end-to-end (TEST 3b), review parsing (TEST 4), retry flow (TEST 5), human-decision hard stop (TEST 6), next-task progression (TEST 7), safety limits (TEST 8), OpenCode availability (TEST 9), report generation (TEST 10)
+4. [x] SAFETY — All limits unchanged: MaxRetries=3/stage, MaxTasksPerRun=10, MaxTotalRetries=50, MaxConsecutiveFailures=3, human-decision hard stop, critical-blocker hard stop, never-commit-unreviewed-work
+5. [x] NO SPRINT 1 WORK — No product code touched; stashed Sprint 1 work preserved
 
 ## Known Issues / Decisions Pending
 - Flutter SDK has compatibility issues with Dart SDK 3.13.2 causing `dart test` to include framework errors (framework-level, not code-level). `flutter test` passes with +4: All tests passed!
@@ -106,4 +99,4 @@ If an agent/session stops unexpectedly:
 6. Commit only when the increment is stable.
 
 ## Last Updated
-2026-09-07 (Orchestrator review fixes complete — self-test 10/10, validation 4/4, awaiting final review)
+2026-09-07 (Orchestrator review round 2 fixes — self-test 15/15, validation 4/4 with flutter build bundle, awaiting final review)

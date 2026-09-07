@@ -26,12 +26,12 @@ After OpenCode implements a task, the orchestrator invokes the review stage to v
 - **Failure Action**: Run `dart format .` and re-check.
 
 ### Stage 3: Unit/Widget Tests
-- **Tool**: `dart test`
+- **Tool**: `flutter test`
 - **Criteria**: All tests pass.
 - **Failure Action**: Invoke OpenCode to fix failing tests, retry up to 3 times.
 
 ### Stage 4: Build
-- **Tool**: `dart compile kernel lib/main.dart` or `flutter analyze`
+- **Tool**: `flutter build bundle` (real Flutter compile check; needs no mobile SDK)
 - **Criteria**: Compiles without errors.
 - **Failure Action**: Invoke OpenCode to fix build errors, retry up to 3 times.
 
