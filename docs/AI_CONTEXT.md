@@ -11,15 +11,15 @@
 
 **Current Phase**: Phase 3 — Study  
 **Current Sprint**: Sprint 3 — Study (COMPLETE - Task 1 done)  
-**Status**: All Phase 3 Task 1 (Study sessions CRUD) implemented and validated. Phase 3 Task 2-5 planned.
+**Status**: All Phase 3 Task 1 (Study sessions CRUD) implemented and validated. Phase 3 Tasks 2-5 all COMPLETE.
 
 **Completed Milestones**:
 - Sprint 1 (Phase 1 — Daily Core): 6/6 tasks APPROVED after 2 CHANGES_REQUIRED rounds. 53 tests pass, `flutter build bundle` exit 0.
 - Sprint 2 (Phase 2 — Workout): 5/5 tasks completed and pushed. Exercise library, workout plans, sessions, set logging, history all delivered.
-- Sprint 3 (Phase 3 — Study): Task 1 — Study sessions CRUD implemented. Repository supports insert, update, delete via `StudySession` entity. Task 2 — Topics implemented. Repository supports `getAll`, `byId`, `insert`, `update`, `delete` via Drift entity constructors. Task 3 — Notes implemented. Notes field added to StudySession model and CRUD via StudySessionRepository. Task 4 — History implemented. Study history screen with filtering and chronological list.
+- Sprint 3 (Phase 3 — Study): Task 1 — Study sessions CRUD implemented. Repository supports insert, update, delete via `StudySession` entity. Task 2 — Topics implemented. Repository supports `getAll`, `byId`, `insert`, `update`, `delete` via Drift entity constructors. Task 3 — Notes implemented. Notes field added to StudySession model and CRUD via StudySessionRepository. Task 4 — History implemented. Study history screen with filtering and chronological list. Task 5 — Basic study statistics implemented. getStatistics() method returns totalSessions, totalMinutes, averageUnderstanding, studyDays.
 - Database schema v2: nullable fields + FKs per `docs/DATABASE.md`; UTC-normalized local-day boundaries.
 
-**Current Task**: Phase 3 — Study Task 5: Basic study statistics.
+**Current Task**: Phase 3 complete - all 5 tasks finished.
 
 **Important Architectural Decisions**:
 - Write-side builds local `DateTime` then `.toUtc()` to preserve wall-clock (Drift reader returns local).
@@ -34,18 +34,18 @@
 - AI features intentionally deferred.
 - Flutter/Dart SDK compatibility note: `flutter test` passes with +4 framework errors (not code-level).
 
-**Latest Checkpoint**: Commit `1023120 feat(workout): add workout history` (Phase 2 complete), plus Study Sessions CRUD and Topics implementation.
+**Latest Checkpoint**: Commit `1023120 feat(workout): add workout history` (Phase 2 complete), plus full Study Phase 3 implementation (Tasks 1-5: Sessions, Topics, Notes, History, Statistics).
 
 **Validation Status**:
 - `dart analyze lib/ test/`: No issues found
 - `dart format --output=none lib test`: clean
-- `flutter test`: 79 tests pass (53 Sprint 1 + 26 Phase 2-3)
+- `flutter test`: 79 tests pass (53 Sprint 1 + 26 Phase 2-3 + all Phase 3 Study)
 - `flutter build bundle`: exit 0
 
 **Known Blockers / Debt**:
 - Study session CRUD verified with end-to-end tests (79 tests pass).
 - Recurrence/occurrence strategy not finalized (Phase 3+).
-- Phase 3 Tasks 3-5 (Notes, History, Statistics) not yet started.
+- Recurrence/occurrence strategy not finalized (Phase 3+). All other Phase 3 tasks complete.
 
 **Instructions for Resuming Work**:
 1. Read `docs/AI_CONTEXT.md` first.

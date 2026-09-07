@@ -75,7 +75,7 @@ COMPLETE — all five approved tasks delivered and validated.
 - [x] Task 2 — Topics
 - [x] Task 3 — Notes
 - [x] Task 4 — History
-- [ ] Task 5 — Basic study statistics
+- [x] Task 5 — Basic study statistics
 
 ## Known Issues / Decisions Pending
 - Recurrence/occurrence strategy not finalized (Phase 3+).
