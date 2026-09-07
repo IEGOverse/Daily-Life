@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/widgets/widgets.dart';
 import '../activities/activity_providers.dart';
@@ -117,7 +118,20 @@ class _Greeting extends StatelessWidget {
       children: [
         Text(_greetingFor(day.hour), style: textTheme.headlineMedium),
         const SizedBox(height: 4),
-        Text(_formatDate(day), style: textTheme.bodyMedium),
+        Row(
+          children: [
+            Flexible(
+              child: Text(_formatDate(day), style: textTheme.bodyMedium),
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              tooltip: 'Calendar & history',
+              icon: const Icon(Icons.calendar_month_outlined),
+              visualDensity: VisualDensity.compact,
+              onPressed: () => context.push('/calendar'),
+            ),
+          ],
+        ),
       ],
     );
   }

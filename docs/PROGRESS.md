@@ -25,6 +25,7 @@ IN PROGRESS
 - [x] Phase 1 Task 2 — Recurring schedule (PRD §5 university schedule seeded; weekly activity generation idempotent; Schedule screen with day selector)
 - [x] Phase 1 Task 3 — Activity model (shared `activities` feature: central model, status lifecycle, repository; dashboard/schedule rewire over it)
 - [x] Phase 1 Task 4 — Activity completion (done/skip/reset inline actions on dashboard timeline; auto-refresh; persisted)
+- [x] Phase 1 Task 5 — Calendar/history (month calendar grid + per-day activity list with completion actions; routed at `/calendar`, reachable from the dashboard date header)
 
 ## Sprint 0 Checklist
 - [x] Verify Flutter/Dart installation
@@ -71,24 +72,24 @@ IN PROGRESS
 ## Current Task
 Sprint 1 in progress.
 
-DONE (Fourth increment, committed): Task 4 — Activity completion.
-`ActivityCard` gained an optional `trailing` slot. The dashboard timeline now
-renders inline actions per activity: a Done (`check_circle_outline`) and Skip
-(`remove_circle_outline`) pair for actionable activities, and a Reset
-(`refresh`) button for completed/skipped ones. Tapping persists via
-`ActivityRepository.updateStatus` (→ `setActivityStatus`) then invalidates
-`dashboardSummaryProvider` and `activitiesForDayProvider`, so progress, NOW/NEXT
-UP, and timeline all refresh. Widget test pumps a real in-memory DB and asserts
-the status write + UI refresh.
+DONE (Fifth increment, committed): Task 5 — Calendar/history.
+`CalendarHistoryScreen` (`/calendar`) shows a month calendar grid (weekday
+headers, today outlined, selected day filled, per-day activity-count dots;
+Prev/Next/Today controls) and the selected day's activity list with the same
+Done/Skip/Reset actions as the dashboard. Initial month/day uses `clockProvider`
+(for testability). Activity counts come from `activitiesForMonthProvider`;
+the day list from `activitiesForDayProvider`. Reachable from the dashboard's
+date-header calendar icon. Uses a lightweight in-house month grid (no new
+third-party package).
 
 ## Next Task
-Task 5 — Calendar/history: browse activities across days (a history view) so
-users can see past/future activity records beyond "today" and the weekly
-schedule. Likely: a calendar/history screen reachable from the dashboard or
-primary nav, showing a month grid + selected day's activities, or a scrollable
-recent-history list; reuses `ActivityRepository.getForRange`. Consider a
-`historyScreen` route + a lightweight date picker/calendar widget (avoid heavy
-third-party packages unless approved).
+Task 6 — Add activity: a form to manually create a one-off Activity (title,
+category, date, start/end time, notes) reusing `ActivityRepository.insert`.
+Wired to the existing `/add` route and Add screen placeholder. This completes
+Phase 1 (Sprint 1). Decisions: whether the Add screen hosts only activities now
+(finance/meals/etc. come in later phases) — keep it activity-only and modular.
+After Task 6, run the full orchestration validation/review gate and update
+checkpoint before closing the sprint.
 
 ## Orchestrator Review — Round 2 Fixes (COMPLETE)
 Second round of orchestrator review fixes applied and verified. Sprint 1 must NOT
@@ -127,13 +128,13 @@ per `docs/DATABASE.md`):
 - [x] 2. Recurring schedule — DONE (committed)
 - [x] 3. Activity model — DONE (committed)
 - [x] 4. Activity completion — DONE (committed)
-- [ ] 5. Calendar/history
+- [x] 5. Calendar/history — DONE (committed)
 - [ ] 6. Add activity
 
-## Verification Results (Task 4 increment)
+## Verification Results (Task 5 increment)
 - `dart analyze lib/ test/`: No issues found
 - `dart format --output=none lib/ test/`: clean
-- `flutter test`: All 46 tests passed (+46)
+- `flutter test`: All 48 tests passed (+48)
 - `flutter build bundle`: exit 0
 
 ## Known Issues / Decisions Pending
@@ -154,4 +155,4 @@ If an agent/session stops unexpectedly:
 6. Commit only when the increment is stable.
 
 ## Last Updated
-2026-09-07 (Sprint 1 increment — Task 4 Activity completion committed; analyze clean, tests 46/46, build bundle exit 0)
+2026-09-07 (Sprint 1 increment — Task 5 Calendar/history committed; analyze clean, tests 48/48, build bundle exit 0)

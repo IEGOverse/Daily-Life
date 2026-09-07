@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:daily_life/features/activities/calendar_history_screen.dart';
 import 'package:daily_life/features/dashboard/dashboard_screen.dart';
 import 'package:daily_life/features/schedule/schedule_screen.dart';
 import 'package:daily_life/features/add/add_screen.dart';
@@ -18,6 +19,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/today',
         builder: (context, state) => const DashboardScreen(),
+      ),
+      GoRoute(
+        path: '/calendar',
+        builder: (context, state) => const CalendarHistoryScreen(),
       ),
       GoRoute(
         path: '/schedule',
