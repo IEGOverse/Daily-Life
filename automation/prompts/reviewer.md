@@ -49,14 +49,36 @@ You are reviewing the implementation for the Daily Life project.
 - `gauntlet`: Broad quality improvement.
 - `autopilot`: CI fix loop.
 
+## Output Format (MANDATORY)
+
+You MUST end your response with EXACTLY ONE machine-readable decision line.
+Nothing else may appear after this line.
+
+```
+REVIEW_DECISION: APPROVED
+REVIEW_DECISION: APPROVED_WITH_FOLLOW_UP
+REVIEW_DECISION: CHANGES_REQUIRED
+REVIEW_DECISION: HUMAN_DECISION_REQUIRED
+```
+
+| Decision | Meaning |
+|----------|---------|
+| `APPROVED` | Implementation meets all criteria. Continue to next task. |
+| `APPROVED_WITH_FOLLOW_UP` | Approved, but note a follow-up item. Continue. |
+| `CHANGES_REQUIRED` | Found issues. Orchestrator will send findings to OpenCode to fix. |
+| `HUMAN_DECISION_REQUIRED` | Blocking decision outside orchestration scope. Hard stop. |
+
 ## Review Process
 
 1. Run all validation commands.
 2. Check code quality against criteria.
 3. Check documentation updates.
 4. Check Git workflow compliance.
-5. If any issues found, invoke OpenCode to fix.
-6. Re-run validation and review.
+5. Produce a machine-readable decision (see Output Format).
+6. The orchestrator parses the decision:
+   - `APPROVED` / `APPROVED_WITH_FOLLOW_UP` → continue to next task
+   - `CHANGES_REQUIRED` → orchestrator sends findings to OpenCode, validates, re-reviews
+   - `HUMAN_DECISION_REQUIRED` → orchestrator persists state, generates report, hard stop
 7. Retry up to 3 times.
 8. If 3 retries fail, escalate to HUMAN_DECISION_REQUIRED.
 

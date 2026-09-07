@@ -64,8 +64,12 @@ Read these files before implementing:
 After implementation, the following must pass:
 - `dart format --output=none .` (0 files changed)
 - `dart analyze lib/` (no issues)
-- `dart test` (all tests pass)
-- `dart compile kernel lib/main.dart` (compiles successfully)
+- `flutter test` (all tests pass)
+- `flutter analyze` (no issues)
+
+> Note: Use `flutter test` (not `dart test`) because `dart test` pulls in the
+> Flutter framework and triggers Dart SDK 3.13.2 compatibility errors in this
+> environment. `flutter test` runs the same test suite correctly.
 
 ## Constraints
 

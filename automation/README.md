@@ -31,18 +31,60 @@ automation/
 ### Running the Orchestrator
 
 ```powershell
-# Run the full orchestrator
+# Run the full orchestrator (discovers next approved task)
 ./automation/scripts/run-task.ps1
 
 # Run a specific task
 ./automation/scripts/run-task.ps1 -Task "Sprint 1: Today dashboard"
 
+# Dry-run self-test (does NOT modify product code)
+./automation/scripts/run-task.ps1 -DryRun
+
 # Validate the project
 ./automation/scripts/validate.ps1
 
-# Create a checkpoint
-./automation/scripts/checkpoint.ps1
+# Checkpoint state: read status
+./automation/scripts/checkpoint.ps1 -Action Status
 ```
+
+### Task Discovery
+
+The orchestrator reads `docs/ROADMAP.md` and `docs/PROGRESS.md` to determine
+the next actually-incomplete approved task. It does NOT use placeholder text.
+Task ordering and completed progress (from `- [x]` markers) are respected.
+
+### Autonomous Loop
+
+The orchestrator loops:
+
+```
+task → implementation → validation → review → checkpoint → next task
+```
+
+It continues through all approved roadmap tasks. It stops ONLY on:
+- `HUMAN_DECISION_REQUIRED`
+- `CRITICAL_BLOCKER`
+- Safety limits exhausted (max tasks/retries/consecutive failures)
+- No approved tasks remaining
+
+### Review Decisions
+
+The review stage returns a machine-readable decision parsed from OpenCode output:
+- `APPROVED` / `APPROVED_WITH_FOLLOW_UP` → continue
+- `CHANGES_REQUIRED` → send findings to OpenCode → fix → validate → re-review
+- `HUMAN_DECISION_REQUIRED` → persist state → generate decision report → hard stop
+
+### OpenCode Invocation
+
+Verified against OpenCode CLI 1.18.18. There is NO `--task`, `--context`, or
+`--skill` flag. The correct invocation is:
+
+```powershell
+opencode run "<message>" --format json [--agent <agent>] [--auto]
+```
+
+The `--agent` flag selects an agent (e.g. `explorer`), `--format json` produces
+machine-readable output, and `--auto` auto-approves non-denied permissions.
 
 ## Safety Rules
 
@@ -54,6 +96,7 @@ automation/
 - **No OpenCode replacement**: The orchestrator invokes OpenCode, it does not replace it.
 - **No AI provider invention**: The orchestrator does not invent API providers.
 - **No hard-coded secrets**: All configuration is in `config/workflow.yaml`.
+- **Never commit unreviewed work**: Git commits only happen after review approves.
 
 ## Documentation
 

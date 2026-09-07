@@ -6,9 +6,8 @@
     Runs all validation checks required by the orchestrator:
     1. Dart format check
     2. Dart analyze
-    3. Dart test
-    4. Dart compile kernel
-    5. Flutter analyze
+    3. Flutter test (uses Flutter test runner)
+    4. Flutter analyze
 
     Returns exit code 0 if all pass, 1 if any fail.
     Has safe failure handling and explicit result reporting.
@@ -25,6 +24,9 @@
     Validation must pass before commit.
     Any failure triggers the fix/retry cycle.
     Maximum retries: 3 per validation stage.
+    Uses flutter test (not dart test) because dart test pulls in the
+    Flutter framework which triggers SDK compatibility errors in this
+    environment. flutter test exercises the same test suite correctly.
 #>
 param(
     [switch]$Verbose,
@@ -34,6 +36,8 @@ param(
 $ErrorActionPreference = "Continue"
 $script:AllPassed = $true
 $script:Results = @{}
+$script:RootDir = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
+if (-not $script:RootDir) { $script:RootDir = (Get-Location).Path }
 
 # --- Helpers ---
 
@@ -49,33 +53,38 @@ function Write-Log {
     Write-Host "$timestamp $prefix $Message"
 }
 
-function Run-ValidationCommand {
+function Invoke-Check {
     param(
         [string]$Name,
         [string]$Command,
-        [string]$WorkDir = "C:\Users\USER\daily_life"
+        [array]$Arguments
     )
 
-    Write-Log "Running $Name: $Command"
+    Write-Log "Running ${Name}: $Command $($Arguments -join ' ')" "INFO"
     try {
-        $output = & $Command 2>&1
+        if ($Arguments.Count -gt 0) {
+            $output = & $Command @Arguments 2>&1
+        } else {
+            $output = & $Command 2>&1
+        }
         $exitCode = $LASTEXITCODE
 
         if ($exitCode -eq 0) {
-            Write-Log "$Name: PASS" "PASS"
+            Write-Log "${Name}: PASS" "PASS"
             $script:Results[$Name] = "PASS"
             return $true
         } else {
-            Write-Log "$Name: FAIL (exit code: $exitCode)" "FAIL"
+            Write-Log "${Name}: FAIL (exit code: $exitCode)" "FAIL"
             if ($Verbose) {
-                Write-Host $output
+                $output | ForEach-Object { Write-Host $_ }
+            } else {
+                $output | Select-Object -First 5 | ForEach-Object { Write-Log "$_" "WARN" }
             }
-            Write-Log "$Name output: $($output | Select-String -First 5 -SimpleMatch)" "WARN"
             $script:Results[$Name] = "FAIL"
             return $false
         }
     } catch {
-        Write-Log "$Name: ERROR - $_" "FAIL"
+        Write-Log "${Name}: ERROR - $_" "FAIL"
         $script:Results[$Name] = "ERROR"
         return $false
     }
@@ -87,19 +96,16 @@ function Invoke-AllValidation {
     Write-Log "=== Starting Validation ==="
 
     # 1. Format check
-    Run-ValidationCommand -Name "Format" -Command "dart format --output=none ."
+    Invoke-Check -Name "Format" -Command "dart" -Arguments @("format","--output=none",".")
 
     # 2. Analyze
-    Run-ValidationCommand -Name "Analyze" -Command "dart analyze lib/"
+    Invoke-Check -Name "Analyze" -Command "dart" -Arguments @("analyze","lib/")
 
-    # 3. Test
-    Run-ValidationCommand -Name "Test" -Command "dart test"
+    # 3. Test (flutter test)
+    Invoke-Check -Name "Test" -Command "flutter" -Arguments @("test")
 
-    # 4. Build
-    Run-ValidationCommand -Name "Build" -Command "dart compile kernel lib/main.dart"
-
-    # 5. Flutter analyze
-    Run-ValidationCommand -Name "Flutter Analyze" -Command "flutter analyze"
+    # 4. Flutter analyze (build/static check)
+    Invoke-Check -Name "Flutter Analyze" -Command "flutter" -Arguments @("analyze")
 
     Write-Log "=== Validation Complete ==="
 

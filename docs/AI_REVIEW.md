@@ -61,13 +61,38 @@ The orchestrator uses the following skills for review:
 
 ## Review Invocation
 
-```powershell
-# Invoke review skill via OpenCode
-opencode --skill review --context "Review the implementation for Sprint 1: Today dashboard"
+The orchestrator invokes the review via OpenCode. There is NO `--skill` flag on
+the installed OpenCode CLI (1.18.18); agents are selected with `--agent`.
 
-# Invoke bugbot review
-opencode --skill review-bugbot --context "Review for bugs in the current implementation"
+```powershell
+# Invoke review (general code review message)
+opencode run "REVIEW_DECISION prompt..." --format json --auto
+
+# Invoke with a specific review agent (if configured)
+opencode run "REVIEW_DECISION prompt..." --agent <agent> --format json --auto
 ```
+
+## Review Decision (machine-readable)
+
+The reviewer MUST end its response with EXACTLY ONE machine-readable decision
+line. The orchestrator parses this line to drive the gate.
+
+```
+REVIEW_DECISION: APPROVED
+REVIEW_DECISION: APPROVED_WITH_FOLLOW_UP
+REVIEW_DECISION: CHANGES_REQUIRED
+REVIEW_DECISION: HUMAN_DECISION_REQUIRED
+```
+
+| Decision | Orchestrator Action |
+|----------|---------------------|
+| `APPROVED` | Continue to next task. |
+| `APPROVED_WITH_FOLLOW_UP` | Record follow-up, continue. |
+| `CHANGES_REQUIRED` | Send findings to OpenCode → fix → validate → re-review. |
+| `HUMAN_DECISION_REQUIRED` | Persist state → generate decision report → hard stop. |
+
+A successful invocation of the review agent is NOT approval. Only a parsed
+`APPROVED` / `APPROVED_WITH_FOLLOW_UP` decision is treated as approval.
 
 ## Review Criteria Checklist
 

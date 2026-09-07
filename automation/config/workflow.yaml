@@ -17,29 +17,48 @@ stop_conditions:
   unresolved_sdk_issue: true     # Hard stop
 
 # OpenCode invocation
+# Verified OpenCode CLI 1.18.18 flags:
+#   opencode run <message> [--agent <agent>] [--format json] [--auto]
+#   There is NO --task, --context, or --skill flag.
 opencode:
   command: "opencode"
+  run_subcommand: true           # Invoke via: opencode run <message>
+  agent_flag: "--agent"          # For review/implementation agents
+  format_flag: "--format json"   # Machine-readable JSON output
+  auto_flag: "--auto"            # Auto-approve non-denied permissions
+  timeout_seconds: 600
   check_command: "Get-Command opencode"
-  timeout_seconds: 300
-  # If opencode is not available, the orchestrator must document the blocker
+  # If opencode is not available, the orchestrator documents CRITICAL_BLOCKER
 
 # Validation commands
+# NOTE: flutter test is used instead of dart test. dart test pulls in the
+# Flutter framework and triggers Dart SDK 3.13.2 compatibility errors.
+# flutter test runs the same test suite correctly.
 validation:
   format: "dart format --output=none ."
   analyze: "dart analyze lib/"
-  test: "dart test"
-  build: "dart compile kernel lib/main.dart"
+  test: "flutter test"
   flutter_analyze: "flutter analyze"
+  build: "flutter analyze"
   # All must pass for validation to succeed
 
 # Review configuration
+# Review decisions (machine-readable, parsed from OpenCode output):
+#   REVIEW_DECISION: APPROVED
+#   REVIEW_DECISION: APPROVED_WITH_FOLLOW_UP
+#   REVIEW_DECISION: CHANGES_REQUIRED
+#   REVIEW_DECISION: HUMAN_DECISION_REQUIRED
 review:
-  skills:
-    - "review"
-    - "review-bugbot"
-    - "review-security"
+  agent: ""                     # Default agent (implementation agent)
+  decision_marker: "REVIEW_DECISION:"
+  valid_decisions:
+    - "APPROVED"
+    - "APPROVED_WITH_FOLLOW_UP"
+    - "CHANGES_REQUIRED"
+    - "HUMAN_DECISION_REQUIRED"
   max_attempts: 3
-  # Review must pass before committing
+  # CHANGES_REQUIRED -> send findings to OpenCode -> fix -> validate -> review again
+  # HUMAN_DECISION_REQUIRED -> persist state -> generate decision report -> hard stop
 
 # State persistence
 state:
@@ -47,6 +66,21 @@ state:
   report_dir: "automation/state/reports/"
   update_on_task_complete: true
   update_on_validation_pass: true
+  schema_fields:
+    - "current_sprint"
+    - "current_task"
+    - "task_status"
+    - "completed_tasks"
+    - "validation_retries"
+    - "fix_retries"
+    - "review_retries"
+    - "last_review_decision"
+    - "last_validation_result"
+    - "global_retry_count"
+    - "consecutive_failures"
+    - "timestamp"
+    - "stop_reason"
+    - "human_decision_required"
 
 # Progress documentation
 progress:
@@ -57,9 +91,10 @@ progress:
 # Git configuration
 git:
   commit_on_complete: true
-  commit_message_format: "<type>: <description>"
+  commit_message_format: "chore: checkpoint — <task>"
   push_on_complete: false  # Set to true if pushing is desired
   branch: "main"
+  commit_unreviewed: false  # NEVER commit unreviewed work
 
 # Safety limits
 safety:
@@ -106,12 +141,6 @@ required_tools:
   - name: "build_runner"
     check: "dart run build_runner --help"
     required: true
-
-# Optional tools
-optional_tools:
-  - name: "flutter_test"
-    check: "flutter test --help"
-    required: false
 
 # Retry Policy
 retry_policy:

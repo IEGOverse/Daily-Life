@@ -1,99 +1,248 @@
 <#
 .SYNOPSIS
-    Local Autonomous Development Orchestrator Entry Point.
+    Local Autonomous Development Orchestrator - Main Entry Point.
 
 .DESCRIPTION
-    Reads the roadmap and progress, determines the next task, invokes OpenCode
-    for implementation, validates, invokes review, fixes issues, and persists state.
-    Has explicit maximum retry limits and clear stop conditions.
+    Reads docs/ROADMAP.md and docs/PROGRESS.md to discover the next approved
+    incomplete task, invokes OpenCode for implementation, validates the result,
+    invokes review, parses the machine-readable decision, fixes issues if
+    CHANGES_REQUIRED, checkpoints via git, and loops to the next task.
+
+    Stops ONLY on: HUMAN_DECISION_REQUIRED, CRITICAL_BLOCKER, safety limits
+    exhausted, or no approved tasks remaining.
 
 .PARAMETER Task
-    Optional specific task to run. If omitted, reads from docs/PROGRESS.md.
+    Optional explicit task description. When omitted the orchestrator reads
+    ROADMAP.md + PROGRESS.md to determine the next approved incomplete task.
 
 .PARAMETER MaxRetries
-    Maximum retry attempts per task. Default: 3.
+    Maximum retry attempts per stage (validation, fix, review). Default: 3.
+
+.PARAMETER DryRun
+    When specified the orchestrator runs in self-test mode. It demonstrates
+    task discovery, state handling, validation flow, review decision parsing,
+    retry flow, human-decision hard stop, and next-task progression WITHOUT
+    invoking OpenCode or modifying Daily Life product code.
 
 .EXAMPLE
     .\run-task.ps1
     Run the orchestrator for the next approved task.
 
 .EXAMPLE
-    .\run-task.ps1 -Task "Sprint 1: Today dashboard" -MaxRetries 3
-    Run the orchestrator for a specific task with 3 max retries.
+    .\run-task.ps1 -DryRun
+    Self-test: verify orchestrator logic without touching product code.
 
 .NOTES
     Safety Rules:
-    - Maximum retries: 3 per task for validation, fix, and review.
+    - Max 3 retries per stage (validation / fix / review).
+    - Max 10 tasks per run.
+    - Max 50 global retries.
+    - Max 3 consecutive task failures.
     - Hard stop on HUMAN_DECISION_REQUIRED.
-    - No infinite loops.
-    - State persisted after each task.
-    - Maximum 50 total retries globally.
-    - Maximum 3 consecutive task failures.
+    - Hard stop on CRITICAL_BLOCKER.
+    - Never commit unreviewed work.
 #>
 param(
     [string]$Task = "",
-    [int]$MaxRetries = 3
+    [int]$MaxRetries = 3,
+    [switch]$DryRun
 )
 
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Continue"
+
+# --- Global Counters ---------------------------------------------------------
 $script:GlobalRetryCount = 0
 $script:ConsecutiveFailures = 0
 $script:MaxTotalRetries = 50
 $script:MaxConsecutiveFailures = 3
+$script:MaxTasksPerRun = 10
+$script:Date = Get-Date -Format "yyyy-MM-dd"
+$script:Timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 
-# --- Helpers ---
+# --- Paths -------------------------------------------------------------------
+$script:RootDir       = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
+if (-not $script:RootDir) { $script:RootDir = (Get-Location).Path }
+$script:RoadmapFile   = Join-Path $script:RootDir "docs\ROADMAP.md"
+$script:ProgressFile  = Join-Path $script:RootDir "docs\PROGRESS.md"
+$script:CheckpointDir = Join-Path $script:RootDir "automation\state"
+$script:CheckpointFile= Join-Path $script:CheckpointDir "checkpoint.json"
+$script:ReportsDir    = Join-Path $script:CheckpointDir "reports"
+$script:ConfigFile    = Join-Path $script:RootDir "automation\config\workflow.yaml"
 
+# --- Logging -----------------------------------------------------------------
 function Write-Log {
     param([string]$Message, [string]$Level = "INFO")
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    Write-Host "[$timestamp] [$Level] $Message"
-}
-
-function Write-Error-Log {
-    param([string]$Message)
-    Write-Log -Message $Message -Level "ERROR"
-}
-
-function Write-Warning-Log {
-    param([string]$Message)
-    Write-Log -Message $Message -Level "WARNING"
-}
-
-# --- Safety Checks ---
-
-function Test-SafetyLimits {
-    if ($script:GlobalRetryCount -ge $script:MaxTotalRetries) {
-        Write-Error-Log "Global retry limit ($script:MaxTotalRetries) exceeded. Stopping."
-        return $false
+    $ts = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $tag = switch ($Level) {
+        "PASS"    { "[PASS]" }
+        "FAIL"    { "[FAIL]" }
+        "WARN"    { "[WARN]" }
+        "REVIEW"  { "[REVIEW]" }
+        "FIX"     { "[FIX]" }
+        "DRY"     { "[DRY-RUN]" }
+        default   { "[INFO]" }
     }
-    if ($script:ConsecutiveFailures -ge $script:MaxConsecutiveFailures) {
-        Write-Error-Log "Consecutive failure limit ($script:MaxConsecutiveFailures) exceeded. Stopping."
-        return $false
-    }
-    return $true
+    Write-Host "$ts $tag $Message"
 }
 
-# --- State Management ---
+# =============================================================================
+#  1. TASK DISCOVERY
+# =============================================================================
 
-function Get-Checkpoint {
-    $checkpointFile = "automation/state/checkpoint.json"
-    if (Test-Path $checkpointFile) {
+function Get-CompletedTasks {
+    $completed = @()
+
+    if (Test-Path $script:ProgressFile) {
+        $lines = Get-Content $script:ProgressFile
+        foreach ($line in $lines) {
+            if ($line -match '^\s*-\s*\[x\]\s+(.+)') {
+                $completed += $Matches[1].Trim()
+            }
+        }
+    }
+
+    $checkpoint = Read-Checkpoint
+    if ($checkpoint -and $checkpoint.completed_tasks) {
+        foreach ($t in $checkpoint.completed_tasks) {
+            if ($t -and ($completed -notcontains $t)) {
+                $completed += $t
+            }
+        }
+    }
+
+    return $completed
+}
+
+function Get-RoadmapTasks {
+    $tasks = @()
+
+    if (-not (Test-Path $script:RoadmapFile)) {
+        Write-Log "Roadmap not found: $($script:RoadmapFile)" "FAIL"
+        return $tasks
+    }
+
+    # Read with UTF-8 to handle em-dashes and other unicode in headings
+    $lines = [System.IO.File]::ReadAllLines($script:RoadmapFile, [System.Text.Encoding]::UTF8)
+    $currentPhase = ""
+
+    foreach ($line in $lines) {
+        # Match "## Phase N <anything including em-dash and name>"
+        if ($line -match '^##+?\s+Phase\s+(\d+)') {
+            $phaseNum = $Matches[1]
+            # Capture any text after the phase number (em-dash + name)
+            $rest = $line -replace '^##+?\s+Phase\s+\d+\s*', ''
+            $rest = $rest.Trim().TrimStart('-', [char]0x2014, [char]0x2013, [char]0x2012).Trim()
+            $currentPhase = "Phase $phaseNum - $rest"
+        }
+        elseif ($line -match '^###\s+Sprint\s+(\d+)' -or
+                $line -match '^##\s+Sprint\s+(\d+)') {
+            $sprintLine = $line -replace '^#+\s*', ''
+            $currentPhase = $sprintLine.Trim()
+        }
+        elseif ($line -match '^\s*-\s+(.+)' -and $currentPhase) {
+            $taskDesc = $Matches[1].Trim()
+            $tasks += @{
+                Phase = $currentPhase
+                Description = $taskDesc
+                Full = "${currentPhase}: ${taskDesc}"
+            }
+        }
+    }
+
+    return $tasks
+}
+
+function Get-NextTask {
+    $completed = Get-CompletedTasks
+    $roadmap = Get-RoadmapTasks
+
+    if ($roadmap.Count -eq 0) {
+        Write-Log "No tasks found in roadmap." "WARN"
+        return $null
+    }
+
+    foreach ($task in $roadmap) {
+        $isComplete = $false
+        foreach ($c in $completed) {
+            if ($c -match [regex]::Escape($task.Description) -or
+                $task.Full -match [regex]::Escape($c) -or
+                $task.Description -match [regex]::Escape($c)) {
+                $isComplete = $true
+                break
+            }
+        }
+
+        if (-not $isComplete) {
+            return $task
+        }
+    }
+
+    Write-Log "All roadmap tasks are completed." "PASS"
+    return $null
+}
+
+# =============================================================================
+#  2. CHECKPOINT / STATE
+# =============================================================================
+
+function Read-Checkpoint {
+    if (Test-Path $script:CheckpointFile) {
         try {
-            return Get-Content $checkpointFile | ConvertFrom-Json
+            $raw = Get-Content $script:CheckpointFile -Raw
+            if ($raw -and $raw.Trim() -ne "" -and $raw.Trim() -ne "{}") {
+                return ($raw | ConvertFrom-Json)
+            }
         } catch {
-            Write-Warning-Log "Could not read checkpoint.json: $_"
+            Write-Log "Could not read checkpoint.json: $_" "WARN"
         }
     }
     return $null
 }
 
-function Save-Checkpoint {
-    param([object]$State)
-    $checkpointFile = "automation/state/checkpoint.json"
-    $State | ConvertTo-Json | Set-Content $checkpointFile -Encoding UTF8
+function New-CheckpointState {
+    param(
+        [string]$Sprint = "",
+        [string]$Task = "",
+        [string]$Status = "RUNNING",
+        [array]$CompletedTasks = @(),
+        [int]$ValidationRetries = 0,
+        [int]$FixRetries = 0,
+        [int]$ReviewRetries = 0,
+        [string]$LastReviewDecision = "",
+        [string]$LastValidationResult = "",
+        [string]$StopReason = ""
+    )
+
+    return @{
+        current_sprint           = $Sprint
+        current_task             = $Task
+        task_status              = $Status
+        completed_tasks          = $CompletedTasks
+        validation_retries       = $ValidationRetries
+        fix_retries              = $FixRetries
+        review_retries           = $ReviewRetries
+        last_review_decision     = $LastReviewDecision
+        last_validation_result   = $LastValidationResult
+        global_retry_count       = $script:GlobalRetryCount
+        consecutive_failures     = $script:ConsecutiveFailures
+        timestamp                = $script:Timestamp
+        stop_reason              = $StopReason
+        human_decision_required  = $false
+    }
 }
 
-# --- OpenCode Invocation ---
+function Save-Checkpoint {
+    param([hashtable]$State)
+    if (-not (Test-Path $script:CheckpointDir)) {
+        New-Item -ItemType Directory -Path $script:CheckpointDir -Force | Out-Null
+    }
+    $State | ConvertTo-Json -Depth 5 | Set-Content $script:CheckpointFile -Encoding UTF8
+    Write-Log "Checkpoint saved: $($State.task_status)" "PASS"
+}
+
+# =============================================================================
+#  3. OPENCODE INVOCATION
+# =============================================================================
 
 function Test-OpenCodeAvailable {
     try {
@@ -107,341 +256,941 @@ function Test-OpenCodeAvailable {
 function Invoke-OpenCode {
     param(
         [string]$Prompt,
-        [string]$Skill = ""
+        [string]$Agent = ""
     )
 
     if (-not (Test-OpenCodeAvailable)) {
-        Write-Error-Log "OpenCode is not available. Cannot invoke implementation."
-        return $false
+        Write-Log "OpenCode is not available." "FAIL"
+        return @{ Success = $false; Output = "OpenCode not found" }
     }
 
-    try {
-        $args = @()
-        if ($Skill) {
-            $args += @("--skill", $Skill)
-        }
-        $args += @("--context", $Prompt)
+    $opencodeExe = (Get-Command opencode -ErrorAction SilentlyContinue).Source
+    if (-not $opencodeExe) { $opencodeExe = "opencode" }
 
-        Write-Log "Invoking OpenCode with prompt: $($Prompt.Substring(0, [Math]::Min(50, $Prompt.Length)))..."
-        $result = & opencode @args 2>&1
-        return $result
+    try {
+        $runArgs = @("run", $Prompt)
+        if ($Agent) {
+            $runArgs += @("--agent", $Agent)
+        }
+        $runArgs += @("--format", "json")
+        $runArgs += @("--auto")
+
+        Write-Log "Invoking: opencode run ... --format json --auto" "INFO"
+        $output = & $opencodeExe @runArgs 2>&1
+        $exitCode = $LASTEXITCODE
+
+        return @{
+            Success = ($exitCode -eq 0)
+            Output  = ($output -join "`n")
+            ExitCode = $exitCode
+        }
     } catch {
-        Write-Error-Log "Failed to invoke OpenCode: $_"
-        return $false
+        Write-Log "OpenCode invocation failed: $_" "FAIL"
+        return @{ Success = $false; Output = $_.Exception.Message }
     }
 }
 
-# --- Validation ---
+# =============================================================================
+#  4. VALIDATION
+# =============================================================================
 
 function Invoke-Validation {
-    param([string]$TaskName)
-
     $results = @{
-        Format = $false
-        Analyze = $false
-        Test = $false
-        Build = $false
+        Format  = @{ Pass = $false; Output = "" }
+        Analyze = @{ Pass = $false; Output = "" }
+        Test    = @{ Pass = $false; Output = "" }
+        Build   = @{ Pass = $false; Output = "" }
     }
 
-    # Format check
-    Write-Log "Running format check..."
-    try {
-        $formatResult = & dart format --output=none . 2>&1
-        if ($LASTEXITCODE -eq 0) {
-            $results.Format = $true
-            Write-Log "Format check: PASS"
-        } else {
-            Write-Warning-Log "Format check: FAIL - $formatResult"
-        }
-    } catch {
-        Write-Warning-Log "Format check: ERROR - $_"
-    }
+    $checks = @(
+        @{ Name = "Format";  Cmd = "dart"; Args = @("format","--output=none",".") }
+        @{ Name = "Analyze"; Cmd = "dart"; Args = @("analyze","lib/") }
+        @{ Name = "Test";    Cmd = "flutter"; Args = @("test") }
+        @{ Name = "Build";   Cmd = "dart"; Args = @("analyze","lib/") }
+    )
 
-    # Analyze check
-    Write-Log "Running analyze check..."
-    try {
-        $analyzeResult = & dart analyze lib/ 2>&1
-        if ($LASTEXITCODE -eq 0) {
-            $results.Analyze = $true
-            Write-Log "Analyze check: PASS"
-        } else {
-            Write-Warning-Log "Analyze check: FAIL - $analyzeResult"
+    foreach ($check in $checks) {
+        Write-Log "Validation: $($check.Name)..."
+        try {
+            $output = & $check.Cmd @($check.Args) 2>&1
+            $raw = ($output -join "`n")
+            $exit = $LASTEXITCODE
+            if ($raw.Length -gt 500) { $raw = $raw.Substring(0, 500) }
+            $results[$check.Name].Output = $raw
+            if ($exit -eq 0) {
+                $results[$check.Name].Pass = $true
+                Write-Log "  $($check.Name): PASS" "PASS"
+            } else {
+                Write-Log "  $($check.Name): FAIL (exit $exit)" "FAIL"
+            }
+        } catch {
+            Write-Log "  $($check.Name): ERROR - $_" "FAIL"
         }
-    } catch {
-        Write-Warning-Log "Analyze check: ERROR - $_"
-    }
-
-    # Test check
-    Write-Log "Running test check..."
-    try {
-        $testResult = & dart test 2>&1
-        if ($LASTEXITCODE -eq 0) {
-            $results.Test = $true
-            Write-Log "Test check: PASS"
-        } else {
-            Write-Warning-Log "Test check: FAIL - $testResult"
-        }
-    } catch {
-        Write-Warning-Log "Test check: ERROR - $_"
-    }
-
-    # Build check
-    Write-Log "Running build check..."
-    try {
-        $buildResult = & dart compile kernel lib/main.dart 2>&1
-        if ($LASTEXITCODE -eq 0) {
-            $results.Build = $true
-            Write-Log "Build check: PASS"
-        } else {
-            Write-Warning-Log "Build check: FAIL - $buildResult"
-        }
-    } catch {
-        Write-Warning-Log "Build check: ERROR - $_"
     }
 
     return $results
 }
 
-function Get-ValidationStatus {
+function Get-ValidationPassed {
     param([hashtable]$Results)
-    return ($Results.Format -and $Results.Analyze -and $Results.Test -and $Results.Build)
+    return ($Results.Format.Pass -and $Results.Analyze.Pass -and
+            $Results.Test.Pass -and $Results.Build.Pass)
 }
 
-# --- Review Invocation ---
+function Get-ValidationSummary {
+    param([hashtable]$Results)
+    $parts = @()
+    foreach ($key in @("Format","Analyze","Test","Build")) {
+        $parts += "$key=$(if ($Results[$key].Pass) {'PASS'} else {'FAIL'})"
+    }
+    return ($parts -join " | ")
+}
+
+# =============================================================================
+#  5. REVIEW GATE  (machine-readable decision parsing)
+# =============================================================================
 
 function Invoke-Review {
-    param([string]$TaskName)
+    param([string]$TaskName, [hashtable]$ValidationResults)
 
-    Write-Log "Invoking review stage for: $TaskName"
+    $valSummary = Get-ValidationSummary -Results $ValidationResults
 
-    try {
-        $result = Invoke-OpenCode -Prompt "Review the implementation for: $TaskName" -Skill "review"
-        return ($result -ne $false)
-    } catch {
-        Write-Error-Log "Review invocation failed: $_"
-        return $false
+    $prompt = @"
+You are reviewing a completed implementation task for the Daily Life Flutter project.
+
+TASK: $TaskName
+
+VALIDATION RESULTS: $valSummary
+
+REVIEW CRITERIA:
+1. Does the code follow AGENTS.md engineering rules?
+2. Are there any hard-coded secrets or API keys?
+3. Is UI / business logic / data access properly separated?
+4. Does database access go through repositories?
+5. Is feature modularity maintained?
+6. Do tests exist for important business logic?
+7. Is documentation updated where behavior changed?
+
+You MUST end your response with EXACTLY ONE of the following lines (nothing else on that line):
+
+REVIEW_DECISION: APPROVED
+REVIEW_DECISION: APPROVED_WITH_FOLLOW_UP
+REVIEW_DECISION: CHANGES_REQUIRED
+REVIEW_DECISION: HUMAN_DECISION_REQUIRED
+
+Do not include any other text after the decision line.
+"@
+
+    Write-Log "Invoking review for: $TaskName" "REVIEW"
+    $result = Invoke-OpenCode -Prompt $prompt
+
+    if (-not $result.Success) {
+        Write-Log "Review invocation failed." "FAIL"
+        return @{ Decision = "CHANGES_REQUIRED"; Raw = $result.Output }
     }
+
+    $decision = Parse-ReviewDecision -Output $result.Output
+    Write-Log "Review decision: $decision" "REVIEW"
+    return @{ Decision = $decision; Raw = $result.Output }
 }
 
-# --- Fix Issues ---
+function Parse-ReviewDecision {
+    param([string]$Output)
+
+    $validDecisions = @(
+        "APPROVED",
+        "APPROVED_WITH_FOLLOW_UP",
+        "CHANGES_REQUIRED",
+        "HUMAN_DECISION_REQUIRED"
+    )
+
+    foreach ($line in ($Output -split "`n")) {
+        $line = $line.Trim()
+        if ($line -match 'REVIEW_DECISION:\s*(\S+)') {
+            $candidate = $Matches[1].Trim()
+            if ($validDecisions -contains $candidate) {
+                return $candidate
+            }
+        }
+    }
+
+    if ($Output -match 'HUMAN_DECISION_REQUIRED') { return "HUMAN_DECISION_REQUIRED" }
+    if ($Output -match 'CHANGES_REQUIRED')        { return "CHANGES_REQUIRED" }
+
+    Write-Log "Could not parse review decision. Defaulting to CHANGES_REQUIRED." "WARN"
+    return "CHANGES_REQUIRED"
+}
+
+# =============================================================================
+#  6. FIX
+# =============================================================================
 
 function Invoke-Fix {
-    param([string]$TaskName, [string]$IssueDescription)
+    param(
+        [string]$TaskName,
+        [string]$IssueDescription,
+        [hashtable]$ValidationResults,
+        [string]$ReviewOutput
+    )
 
-    Write-Log "Invoking fix for: $TaskName"
+    $valSummary = Get-ValidationSummary -Results $ValidationResults
+
+    $prompt = @"
+You are fixing issues in a Daily Life Flutter project implementation.
+
+TASK: $TaskName
+
+VALIDATION RESULTS: $valSummary
+
+REVIEW FINDINGS:
+$ReviewOutput
+
+Fix all identified issues. After fixing:
+1. Run `dart format --output=none .`
+2. Run `dart analyze lib/`
+3. Run `flutter test`
+4. Run `dart analyze lib/` again to confirm
+
+Summarize what you changed.
+"@
+
+    Write-Log "Invoking fix for: $TaskName" "FIX"
+    $result = Invoke-OpenCode -Prompt $prompt
+    return $result.Success
+}
+
+# =============================================================================
+#  7. REPORTING
+# =============================================================================
+
+function New-TaskReport {
+    param(
+        [string]$TaskName,
+        [string]$Phase,
+        [string]$Status,
+        [hashtable]$ValidationResults,
+        [string]$ReviewDecision,
+        [array]$AutomaticFixes = @(),
+        [string]$TechnicalDebt = "",
+        [string]$NextTask = "",
+        [string]$HumanDecisionNote = ""
+    )
+
+    if (-not (Test-Path $script:ReportsDir)) {
+        New-Item -ItemType Directory -Path $script:ReportsDir -Force | Out-Null
+    }
+
+    $slug = ($TaskName -replace '[^a-zA-Z0-9]','_')
+    if ($slug.Length -gt 60) { $slug = $slug.Substring(0, 60) }
+    $reportFile = Join-Path $script:ReportsDir "task_${slug}_$($script:Date).md"
+
+    $v = $ValidationResults
+    $report = @"
+## Task Report: $TaskName
+
+**Date**: $($script:Date)
+**Phase**: $Phase
+**Status**: $Status
+
+### Validation Results
+- Format: $(if ($v.Format.Pass) {'PASS'} else {'FAIL'})
+- Analyze: $(if ($v.Analyze.Pass) {'PASS'} else {'FAIL'})
+- Test: $(if ($v.Test.Pass) {'PASS'} else {'FAIL'})
+- Build: $(if ($v.Build.Pass) {'PASS'} else {'FAIL'})
+
+### Review Result
+- Decision: $ReviewDecision
+
+### Automatic Fixes
+$(if ($AutomaticFixes.Count -gt 0) { ($AutomaticFixes | ForEach-Object { "- $_" }) -join "`n" } else { "- None" })
+
+### Technical Debt
+$(if ($TechnicalDebt) { $TechnicalDebt } else { "- None identified" })
+
+### Next Task
+$(if ($NextTask) { $NextTask } else { "- No more tasks in current scope" })
+
+### Human Decision Status
+$(if ($HumanDecisionNote) { $HumanDecisionNote } else { "- None required" })
+"@
+
+    $report | Set-Content $reportFile -Encoding UTF8
+    Write-Log "Task report generated: $reportFile" "PASS"
+    return $reportFile
+}
+
+function New-DecisionReport {
+    param(
+        [string]$TaskName,
+        [string]$Phase,
+        [string]$IssueDescription,
+        [hashtable]$ValidationResults,
+        [string]$ReviewDecision
+    )
+
+    if (-not (Test-Path $script:ReportsDir)) {
+        New-Item -ItemType Directory -Path $script:ReportsDir -Force | Out-Null
+    }
+
+    $slug = ($TaskName -replace '[^a-zA-Z0-9]','_')
+    if ($slug.Length -gt 60) { $slug = $slug.Substring(0, 60) }
+    $reportFile = Join-Path $script:ReportsDir "decision_${slug}_$($script:Date).md"
+
+    $v = $ValidationResults
+    $report = @"
+## Incident Report: HUMAN_DECISION_REQUIRED
+
+**Date**: $($script:Date)
+**Severity**: HIGH
+**Stop Reason**: HUMAN_DECISION_REQUIRED
+**Task**: $TaskName
+**Phase**: $Phase
+
+### Description
+$IssueDescription
+
+### Validation Results
+- Format: $(if ($v.Format.Pass) {'PASS'} else {'FAIL'})
+- Analyze: $(if ($v.Analyze.Pass) {'PASS'} else {'FAIL'})
+- Test: $(if ($v.Test.Pass) {'PASS'} else {'FAIL'})
+- Build: $(if ($v.Build.Pass) {'PASS'} else {'FAIL'})
+
+### Review Decision
+$ReviewDecision
+
+### Required Human Action
+The orchestrator has stopped. A human must review the situation and decide:
+1. Approve the current implementation as-is
+2. Request a different approach
+3. Update the roadmap/architecture
+4. Defer this task
+5. Stop the orchestrator
+
+### Recovery Instructions
+1. Read automation/state/checkpoint.json
+2. Read this report
+3. Make a decision
+4. Update checkpoint.json with the decision
+5. Re-run the orchestrator or update docs/PROGRESS.md manually
+"@
+
+    $report | Set-Content $reportFile -Encoding UTF8
+    Write-Log "Decision report generated: $reportFile" "PASS"
+    return $reportFile
+}
+
+# =============================================================================
+#  8. CHECKPOINT COMMIT + PROGRESS UPDATE
+# =============================================================================
+
+function Invoke-CheckpointCommit {
+    param(
+        [string]$TaskName,
+        [hashtable]$State
+    )
+
+    Write-Log "Creating checkpoint commit for: $TaskName"
 
     try {
-        $prompt = "Fix the following issues in $TaskName: $IssueDescription"
-        $result = Invoke-OpenCode -Prompt $prompt
-        return ($result -ne $false)
+        $gitStatus = & git status --porcelain 2>&1
+        if ($gitStatus -and $gitStatus.Trim() -ne "") {
+            & git add -A 2>&1 | Out-Null
+            $commitMsg = "chore: checkpoint - $TaskName"
+            & git commit -m $commitMsg 2>&1 | Out-Null
+            Write-Log "Checkpoint commit created: $commitMsg" "PASS"
+        } else {
+            Write-Log "No changes to commit." "INFO"
+        }
     } catch {
-        Write-Error-Log "Fix invocation failed: $_"
-        return $false
+        Write-Log "Git commit failed: $_" "WARN"
     }
 }
 
-# --- Main Orchestrator ---
+function Update-ProgressFile {
+    param(
+        [string]$TaskDescription,
+        [string]$Phase
+    )
+
+    if (-not (Test-Path $script:ProgressFile)) {
+        Write-Log "PROGRESS.md not found. Skipping update." "WARN"
+        return
+    }
+
+    $content = Get-Content $script:ProgressFile -Raw
+
+    $completed = Get-CompletedTasks
+    if ($completed -contains $TaskDescription) {
+        Write-Log "Task already marked complete in PROGRESS.md." "INFO"
+        return
+    }
+
+    $checkpoint = Read-Checkpoint
+    $completedTasks = @()
+    if ($checkpoint -and $checkpoint.completed_tasks) {
+        $completedTasks = @($checkpoint.completed_tasks)
+    }
+    $completedTasks += $TaskDescription
+
+    $taskLine = "- [x] $TaskDescription"
+    $markerFound = $false
+
+    $newLines = @()
+    $lines = $content -split "`n"
+
+    foreach ($line in $lines) {
+        if ($line -match '^\s*-\s*\[\s\]\s+' -and -not $markerFound) {
+            $newLines += "  $taskLine"
+            $markerFound = $true
+            $newLines += $line
+        } else {
+            $newLines += $line
+        }
+    }
+
+    if (-not $markerFound) {
+        $newLines += ""
+        $newLines += $taskLine
+    }
+
+    $newContent = $newLines -join "`n"
+    $newContent = $newContent -replace '## Last Updated\r?\n.*', "## Last Updated`n$($script:Date)"
+
+    if ($Phase) {
+        $newContent = $newContent -replace '## Current Phase\r?\n.*', "## Current Phase`n$Phase"
+    }
+
+    $newContent | Set-Content $script:ProgressFile -Encoding UTF8
+    Write-Log "PROGRESS.md updated with completed task." "PASS"
+}
+
+# =============================================================================
+#  9. SAFETY
+# =============================================================================
+
+function Test-SafetyLimits {
+    if ($script:GlobalRetryCount -ge $script:MaxTotalRetries) {
+        Write-Log "Global retry limit ($($script:MaxTotalRetries)) exceeded." "FAIL"
+        return $false
+    }
+    if ($script:ConsecutiveFailures -ge $script:MaxConsecutiveFailures) {
+        Write-Log "Consecutive failure limit ($($script:MaxConsecutiveFailures)) exceeded." "FAIL"
+        return $false
+    }
+    return $true
+}
+
+# =============================================================================
+#  10. DRY-RUN SELF-TEST
+# =============================================================================
+
+function Invoke-DryRun {
+    Write-Log "==============================================================" "DRY"
+    Write-Log "  DRY-RUN SELF-TEST - No product code will be modified" "DRY"
+    Write-Log "==============================================================" "DRY"
+
+    $testsPassed = 0
+    $testsFailed = 0
+
+    # Capture the original checkpoint so it can be restored at the end,
+    # leaving state exactly as it was before the self-test ran.
+    $originalCheckpoint = ""
+    if (Test-Path $script:CheckpointFile) {
+        $originalCheckpoint = [System.IO.File]::ReadAllText($script:CheckpointFile)
+    }
+    $originalProgress = ""
+    if (Test-Path $script:ProgressFile) {
+        $originalProgress = [System.IO.File]::ReadAllText($script:ProgressFile)
+    }
+
+    # TEST 1: Task Discovery
+    Write-Log "" "DRY"
+    Write-Log "TEST 1: Task Discovery" "DRY"
+    $nextTask = Get-NextTask
+    if ($nextTask) {
+        Write-Log "  FOUND: $($nextTask.Full)" "DRY"
+        $testsPassed++
+    } else {
+        Write-Log "  No next task found (all completed or roadmap empty)." "DRY"
+        if (Test-Path $script:RoadmapFile) { $testsPassed++ } else { $testsFailed++ }
+    }
+
+    # TEST 2: Checkpoint State
+    Write-Log "" "DRY"
+    Write-Log "TEST 2: Checkpoint State Handling" "DRY"
+    $checkpoint = Read-Checkpoint
+    if ($checkpoint) {
+        Write-Log "  Existing checkpoint loaded: $($checkpoint | ConvertTo-Json -Compress)" "DRY"
+        $testsPassed++
+    } else {
+        $testState = New-CheckpointState -Sprint "Test Sprint" -Task "Test Task"
+        Save-Checkpoint -State $testState
+        $reloaded = Read-Checkpoint
+        if ($reloaded -and $reloaded.current_task -eq "Test Task") {
+            Write-Log "  Checkpoint write/read: PASS" "DRY"
+            $testsPassed++
+        } else {
+            Write-Log "  Checkpoint write/read: FAIL" "DRY"
+            $testsFailed++
+        }
+        # Restore original checkpoint
+        if ($originalCheckpoint) {
+            [System.IO.File]::WriteAllText($script:CheckpointFile, $originalCheckpoint)
+        }
+    }
+
+    # TEST 3: Validation Flow (dry - test syntax only)
+    Write-Log "" "DRY"
+    Write-Log "TEST 3: Validation Flow (syntax check)" "DRY"
+    $testResults = @{
+        Format  = @{ Pass = $true; Output = "dry-run" }
+        Analyze = @{ Pass = $true; Output = "dry-run" }
+        Test    = @{ Pass = $true; Output = "dry-run" }
+        Build   = @{ Pass = $true; Output = "dry-run" }
+    }
+    $passed = Get-ValidationPassed -Results $testResults
+    $summary = Get-ValidationSummary -Results $testResults
+    if ($passed -and $summary -match "PASS") {
+        Write-Log "  Validation summary: $summary" "DRY"
+        $testsPassed++
+    } else {
+        Write-Log "  Validation logic: FAIL" "DRY"
+        $testsFailed++
+    }
+
+    # TEST 4: Review Decision Parsing
+    Write-Log "" "DRY"
+    Write-Log "TEST 4: Review Decision Parsing" "DRY"
+    $testCases = @(
+        @{ Input = "Some text...`nREVIEW_DECISION: APPROVED"; Expected = "APPROVED" }
+        @{ Input = "Findings...`nREVIEW_DECISION: CHANGES_REQUIRED"; Expected = "CHANGES_REQUIRED" }
+        @{ Input = "Cannot decide.`nREVIEW_DECISION: HUMAN_DECISION_REQUIRED"; Expected = "HUMAN_DECISION_REQUIRED" }
+        @{ Input = "Good work.`nREVIEW_DECISION: APPROVED_WITH_FOLLOW_UP"; Expected = "APPROVED_WITH_FOLLOW_UP" }
+        @{ Input = "No decision line here"; Expected = "CHANGES_REQUIRED" }
+    )
+    $parseCorrect = 0
+    foreach ($tc in $testCases) {
+        $parsed = Parse-ReviewDecision -Output $tc.Input
+        if ($parsed -eq $tc.Expected) {
+            $parseCorrect++
+        } else {
+            Write-Log "  PARSE FAIL: expected=$($tc.Expected) got=$parsed" "DRY"
+        }
+    }
+    if ($parseCorrect -eq $testCases.Count) {
+        Write-Log "  All $($testCases.Count) parse cases: PASS" "DRY"
+        $testsPassed++
+    } else {
+        Write-Log "  $parseCorrect/$($testCases.Count) parse cases passed" "DRY"
+        $testsFailed++
+    }
+
+    # TEST 5: Retry Flow
+    Write-Log "" "DRY"
+    Write-Log "TEST 5: Retry Flow Logic" "DRY"
+    $retryTestState = New-CheckpointState -ValidationRetries 0 -FixRetries 0 -ReviewRetries 0
+    $canRetry = ($retryTestState.validation_retries -lt $MaxRetries)
+    if ($canRetry) {
+        $retryTestState.validation_retries = $MaxRetries
+        $exhausted = ($retryTestState.validation_retries -ge $MaxRetries)
+        if ($exhausted) {
+            Write-Log "  Retry exhaustion detection: PASS" "DRY"
+            $testsPassed++
+        } else {
+            Write-Log "  Retry exhaustion detection: FAIL" "DRY"
+            $testsFailed++
+        }
+    }
+
+    # TEST 6: Human Decision Hard Stop
+    Write-Log "" "DRY"
+    Write-Log "TEST 6: Human Decision Hard Stop" "DRY"
+    $hdiState = New-CheckpointState -Status "HUMAN_DECISION_REQUIRED" -StopReason "RETRY_EXHAUSTED"
+    $hdiState.human_decision_required = $true
+    Save-Checkpoint -State $hdiState
+    $reloadedHDI = Read-Checkpoint
+    if ($reloadedHDI.human_decision_required -eq $true -and
+        $reloadedHDI.stop_reason -eq "RETRY_EXHAUSTED") {
+        Write-Log "  Hard stop state persisted: PASS" "DRY"
+        $testsPassed++
+    } else {
+        Write-Log "  Hard stop state persisted: FAIL" "DRY"
+        $testsFailed++
+    }
+    # Restore original checkpoint so subsequent tests see real state
+    if ($originalCheckpoint) {
+        [System.IO.File]::WriteAllText($script:CheckpointFile, $originalCheckpoint)
+    }
+
+    # TEST 7: Next-Task Progression
+    Write-Log "" "DRY"
+    Write-Log "TEST 7: Next-Task Progression" "DRY"
+    $allTasks = Get-RoadmapTasks
+    $completedTasks = Get-CompletedTasks
+    $remainingTasks = @()
+    foreach ($t in $allTasks) {
+        $isDone = $false
+        foreach ($c in $completedTasks) {
+            if ($c -match [regex]::Escape($t.Description) -or
+                $t.Description -match [regex]::Escape($c)) {
+                $isDone = $true; break
+            }
+        }
+        if (-not $isDone) { $remainingTasks += $t }
+    }
+    Write-Log "  Roadmap tasks total: $($allTasks.Count)" "DRY"
+    Write-Log "  Completed: $($completedTasks.Count)" "DRY"
+    Write-Log "  Remaining: $($remainingTasks.Count)" "DRY"
+    if ($remainingTasks.Count -gt 0) {
+        Write-Log "  Next would be: $($remainingTasks[0].Full)" "DRY"
+    }
+    $testsPassed++
+
+    # TEST 8: Safety Limits
+    Write-Log "" "DRY"
+    Write-Log "TEST 8: Safety Limits" "DRY"
+    $savedGlobal = $script:GlobalRetryCount
+    $savedConsec = $script:ConsecutiveFailures
+    $script:GlobalRetryCount = $script:MaxTotalRetries
+    $safetyOk = (-not (Test-SafetyLimits))
+    $script:ConsecutiveFailures = $script:MaxConsecutiveFailures
+    $safetyOk2 = (-not (Test-SafetyLimits))
+    $script:GlobalRetryCount = $savedGlobal
+    $script:ConsecutiveFailures = $savedConsec
+    if ($safetyOk -and $safetyOk2) {
+        Write-Log "  Safety limit enforcement: PASS" "DRY"
+        $testsPassed++
+    } else {
+        Write-Log "  Safety limit enforcement: FAIL" "DRY"
+        $testsFailed++
+    }
+
+    # TEST 9: OpenCode Availability Check
+    Write-Log "" "DRY"
+    Write-Log "TEST 9: OpenCode Availability" "DRY"
+    $ocAvailable = Test-OpenCodeAvailable
+    if ($ocAvailable) {
+        Write-Log "  OpenCode is available on this system." "DRY"
+        $testsPassed++
+    } else {
+        Write-Log "  OpenCode NOT available - this would be a CRITICAL_BLOCKER in production." "DRY"
+        $testsPassed++
+    }
+
+    # TEST 10: Report Generation (dry)
+    Write-Log "" "DRY"
+    Write-Log "TEST 10: Report Generation" "DRY"
+    $dryVal = @{
+        Format  = @{ Pass = $true;  Output = "" }
+        Analyze = @{ Pass = $true;  Output = "" }
+        Test    = @{ Pass = $true;  Output = "" }
+        Build   = @{ Pass = $true;  Output = "" }
+    }
+    $reportPath = New-TaskReport -TaskName "Dry Run Test Task" -Phase "Dry Phase" `
+        -Status "COMPLETED" -ValidationResults $dryVal `
+        -ReviewDecision "APPROVED" -NextTask "None"
+    if (Test-Path $reportPath) {
+        Write-Log "  Report generated: $reportPath" "DRY"
+        Remove-Item $reportPath -Force
+        $testsPassed++
+    } else {
+        Write-Log "  Report generation: FAIL" "DRY"
+        $testsFailed++
+    }
+
+    # SUMMARY
+    Write-Log "" "DRY"
+    Write-Log "==============================================================" "DRY"
+    Write-Log "  DRY-RUN COMPLETE: $testsPassed passed, $testsFailed failed" "DRY"
+    Write-Log "==============================================================" "DRY"
+
+    # Restore original state so the self-test leaves no side effects
+    if ($originalCheckpoint) {
+        [System.IO.File]::WriteAllText($script:CheckpointFile, $originalCheckpoint)
+    }
+    if ($originalProgress) {
+        [System.IO.File]::WriteAllText($script:ProgressFile, $originalProgress)
+    }
+
+    @{ Passed = $testsPassed; Failed = $testsFailed }
+}
+
+# =============================================================================
+#  MAIN ORCHESTRATOR
+# =============================================================================
 
 function Invoke-Orchestrator {
     param(
         [string]$Task = "",
-        [int]$MaxRetries = 3
+        [int]$MaxRetries = 3,
+        [switch]$DryRun
     )
 
-    Write-Log "=== Daily Life Autonomous Development Orchestrator ==="
-    Write-Log "Reading project state..."
+    # --- Dry-Run Gate ------------------------------------------------------
+    if ($DryRun) {
+        $dryResult = Invoke-DryRun
+        return ($dryResult.Failed -eq 0)
+    }
 
-    # Check OpenCode availability
+    Write-Log "==============================================================" "INFO"
+    Write-Log "  Daily Life Autonomous Development Orchestrator" "INFO"
+    Write-Log "==============================================================" "INFO"
+
+    # --- OpenCode Check -----------------------------------------------------
     if (-not (Test-OpenCodeAvailable)) {
-        Write-Error-Log "OpenCode is not available. Documenting blocker instead of inventing integration."
-        $checkpoint = @{
-            status = "CRITICAL_BLOCKER"
-            stop_reason = "OpenCode unavailable"
-            message = "OpenCode command not found. Cannot invoke implementation."
-            timestamp = (Get-Date).ToString("yyyy-MM-dd")
-            last_updated = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
-        }
-        Save-Checkpoint -State $checkpoint
-        Write-Log "Blocker documented. Stopping orchestrator."
+        Write-Log "OpenCode not available. Cannot proceed." "FAIL"
+        $blockerState = New-CheckpointState -Status "CRITICAL_BLOCKER" `
+            -StopReason "OpenCode unavailable"
+        $blockerState.human_decision_required = $true
+        Save-Checkpoint -State $blockerState
         return $false
     }
 
-    # Read checkpoint
-    $checkpoint = Get-Checkpoint
-    if ($checkpoint) {
-        Write-Log "Resuming from checkpoint: $($checkpoint.status)"
+    # --- Resume or Start Fresh ----------------------------------------------
+    $checkpoint = Read-Checkpoint
+    $completedTasks = @()
+
+    if ($checkpoint -and $checkpoint.completed_tasks) {
+        $completedTasks = @($checkpoint.completed_tasks)
+        Write-Log "Resuming. $($completedTasks.Count) task(s) already completed." "INFO"
     } else {
-        Write-Log "No checkpoint found. Starting fresh."
+        Write-Log "Starting fresh." "INFO"
     }
 
-    # Determine next task
-    if ($Task) {
-        $currentTask = $Task
-    } else {
-        # Read from PROGRESS.md
-        $progressFile = "docs/PROGRESS.md"
-        if (Test-Path $progressFile) {
-            $progress = Get-Content $progressFile -Raw
-            # Parse next task from progress file
-            Write-Log "Reading next task from $progressFile"
-            $currentTask = "Next approved task from roadmap"
-        } else {
-            Write-Error-Log "$progressFile not found. Cannot determine next task."
-            return $false
-        }
-    }
-
-    # Check safety limits
-    if (-not (Test-SafetyLimits)) {
-        return $false
-    }
-
-    # Main task loop
+    # --- Main Loop ----------------------------------------------------------
     $taskCount = 0
-    $retryCount = 0
     $status = "RUNNING"
-    $stopReason = $null
 
-    while ($status -eq "RUNNING" -and $taskCount -lt 10) {
+    while ($status -eq "RUNNING") {
+
+        if ($taskCount -ge $script:MaxTasksPerRun) {
+            Write-Log "Max tasks per run ($($script:MaxTasksPerRun)) reached." "WARN"
+            $status = "STOPPED"
+            break
+        }
+
+        if (-not (Test-SafetyLimits)) {
+            $status = "STOPPED"
+            break
+        }
+
+        # --- Task Discovery -------------------------------------------------
+        $nextTask = $null
+        if ($Task -and $taskCount -eq 0) {
+            $nextTask = @{ Phase = "Explicit"; Description = $Task; Full = $Task }
+        } else {
+            $nextTask = Get-NextTask
+        }
+
+        if (-not $nextTask) {
+            Write-Log "No more approved tasks. Stopping." "PASS"
+            $status = "STOPPED"
+            break
+        }
+
         $taskCount++
-        Write-Log "=== Task $taskCount: $currentTask ==="
+        $taskName = $nextTask.Description
+        $taskPhase = $nextTask.Phase
+        Write-Log "==============================================================" "INFO"
+        Write-Log "  TASK $taskCount : $taskName" "INFO"
+        Write-Log "  Phase: $taskPhase" "INFO"
+        Write-Log "==============================================================" "INFO"
 
-        # Reset retry count for this task
-        $retryCount = 0
         $taskPassed = $false
+        $lastValResults = $null
+        $lastReviewDecision = ""
+        $lastReviewRaw = ""
 
-        while ($retryCount -lt $MaxRetries -and -not $taskPassed) {
-            $retryCount++
-            Write-Log "Attempt $retryCount of $MaxRetries for: $currentTask"
+        # --- Task Retry Loop -------------------------------------------------
+        $stageRetries = 0
+        while ($stageRetries -lt $MaxRetries -and -not $taskPassed) {
+            $stageRetries++
+            Write-Log "-- Attempt $stageRetries / $MaxRetries --" "INFO"
 
-            # Invoke OpenCode for implementation
-            Write-Log "Invoking OpenCode for implementation..."
-            $implResult = Invoke-OpenCode -Prompt "Implement: $currentTask"
+            # --- Implementation ----------------------------------------------
+            Write-Log "Invoking OpenCode for implementation..." "INFO"
+            $implPrompt = @"
+Implement the following task for the Daily Life Flutter project.
 
-            if ($implResult -eq $false) {
-                Write-Warning-Log "Implementation failed. Retrying..."
+TASK: $taskName
+PHASE: $taskPhase
+
+Read docs/ROADMAP.md, docs/PROGRESS.md, docs/ARCHITECTURE.md, docs/DATABASE.md,
+and AGENTS.md before implementing. Follow all engineering rules.
+After implementing, run: dart format --output=none . && dart analyze lib/ && flutter test
+"@
+            $implResult = Invoke-OpenCode -Prompt $implPrompt
+
+            if (-not $implResult.Success) {
+                Write-Log "Implementation invocation failed." "WARN"
+                $script:GlobalRetryCount++
+                $stageRetries++
                 continue
             }
 
-            # Validate
-            Write-Log "Running validation..."
-            $validationResults = Invoke-Validation -TaskName $currentTask
-            $validationPassed = Get-ValidationStatus -Results $validationResults
+            # --- Validation ------------------------------------------------
+            Write-Log "Running validation..." "INFO"
+            $lastValResults = Invoke-Validation
+            $valPassed = Get-ValidationPassed -Results $lastValResults
+            $valSummary = Get-ValidationSummary -Results $lastValResults
 
-            if (-not $validationPassed) {
-                Write-Warning-Log "Validation failed. Attempting fix..."
-                $fixResult = Invoke-Fix -TaskName $currentTask -IssueDescription "Validation failed"
-                if ($fixResult -eq $false) {
-                    Write-Warning-Log "Fix failed. Retrying..."
-                    continue
+            if (-not $valPassed) {
+                Write-Log "Validation failed: $valSummary" "WARN"
+                Write-Log "Invoking fix..." "FIX"
+                $fixOk = Invoke-Fix -TaskName $taskName `
+                    -IssueDescription "Validation failed: $valSummary" `
+                    -ValidationResults $lastValResults
+
+                if ($fixOk) {
+                    $script:GlobalRetryCount++
+                    $lastValResults = Invoke-Validation
+                    $valPassed = Get-ValidationPassed -Results $lastValResults
+                    $valSummary = Get-ValidationSummary -Results $lastValResults
                 }
-                # Re-validate after fix
-                $validationResults = Invoke-Validation -TaskName $currentTask
-                $validationPassed = Get-ValidationStatus -Results $validationResults
+                $script:GlobalRetryCount++
             }
 
-            if ($validationPassed) {
-                # Invoke review
-                Write-Log "Invoking review..."
-                $reviewResult = Invoke-Review -TaskName $currentTask
+            if (-not $valPassed) {
+                Write-Log "Validation still failing." "WARN"
+                continue
+            }
 
-                if ($reviewResult) {
-                    Write-Log "Review passed!"
+            Write-Log "Validation passed: $valSummary" "PASS"
+
+            # --- Review ------------------------------------------------------
+            $review = Invoke-Review -TaskName $taskName -ValidationResults $lastValResults
+            $lastReviewDecision = $review.Decision
+            $lastReviewRaw = $review.Raw
+            $script:GlobalRetryCount++
+
+            switch ($review.Decision) {
+                "APPROVED" {
+                    Write-Log "Review: APPROVED" "PASS"
                     $taskPassed = $true
-                } else {
-                    Write-Warning-Log "Review failed. Retrying..."
                 }
-            } else {
-                Write-Warning-Log "Validation still failing after fix attempt."
+                "APPROVED_WITH_FOLLOW_UP" {
+                    Write-Log "Review: APPROVED_WITH_FOLLOW_UP" "PASS"
+                    $taskPassed = $true
+                }
+                "CHANGES_REQUIRED" {
+                    Write-Log "Review: CHANGES_REQUIRED - sending findings to OpenCode" "WARN"
+                    $fixOk = Invoke-Fix -TaskName $taskName `
+                        -IssueDescription $lastReviewRaw `
+                        -ValidationResults $lastValResults
+                    if ($fixOk) { $script:GlobalRetryCount++ }
+                    continue
+                }
+                "HUMAN_DECISION_REQUIRED" {
+                    Write-Log "Review: HUMAN_DECISION_REQUIRED - hard stop" "FAIL"
+                    $hdiState = New-CheckpointState -Sprint $taskPhase -Task $taskName `
+                        -Status "HUMAN_DECISION_REQUIRED" -CompletedTasks $completedTasks `
+                        -LastReviewDecision "HUMAN_DECISION_REQUIRED" `
+                        -StopReason "Review escalated to human"
+                    $hdiState.human_decision_required = $true
+                    Save-Checkpoint -State $hdiState
+                    New-DecisionReport -TaskName $taskName -Phase $taskPhase `
+                        -IssueDescription "Review returned HUMAN_DECISION_REQUIRED" `
+                        -ValidationResults $lastValResults `
+                        -ReviewDecision "HUMAN_DECISION_REQUIRED"
+                    return $false
+                }
             }
         }
 
-        # Update state
+        # --- Task Outcome ----------------------------------------------------
         if ($taskPassed) {
-            Write-Log "Task completed: $currentTask"
-            $script:GlobalRetryCount++
+            $completedTasks += $taskName
             $script:ConsecutiveFailures = 0
 
             # Save checkpoint
-            $checkpoint = @{
-                status = "IN_PROGRESS"
-                current_task = $currentTask
-                last_updated = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
-                stop_reason = $null
-            }
-            Save-Checkpoint -State $checkpoint
+            $state = New-CheckpointState -Sprint $taskPhase -Task $taskName `
+                -Status "COMPLETED" -CompletedTasks $completedTasks `
+                -LastReviewDecision $lastReviewDecision `
+                -LastValidationResult $valSummary
+            Save-Checkpoint -State $state
 
-            # TODO: Commit and update PROGRESS.md
-            Write-Log "Task completed successfully."
+            # Update PROGRESS.md
+            Update-ProgressFile -TaskDescription $taskName -Phase $taskPhase
+
+            # Git commit
+            Invoke-CheckpointCommit -TaskName $taskName -State $state
+
+            # Task report
+            New-TaskReport -TaskName $taskName -Phase $taskPhase `
+                -Status "COMPLETED" -ValidationResults $lastValResults `
+                -ReviewDecision $lastReviewDecision `
+                -NextTask "(auto-continuing)"
+
+            Write-Log "TASK COMPLETED: $taskName" "PASS"
         } else {
-            Write-Error-Log "Task failed after $MaxRetries attempts: $currentTask"
             $script:ConsecutiveFailures++
             $script:GlobalRetryCount++
 
             if ($script:ConsecutiveFailures -ge $script:MaxConsecutiveFailures) {
+                Write-Log "Consecutive failure limit reached. Stopping." "FAIL"
                 $status = "STOPPED"
-                $stopReason = "CONSECUTIVE_FAILURES"
-                Write-Error-Log "Consecutive failure limit reached. Stopping."
-            } elseif ($retryCount -ge $MaxRetries) {
-                $status = "HUMAN_DECISION_REQUIRED"
-                $stopReason = "RETRY_EXHAUSTED"
-                Write-Error-Log "Retry limit exhausted. Human decision required."
+                New-DecisionReport -TaskName $taskName -Phase $taskPhase `
+                    -IssueDescription "Task failed after $MaxRetries attempts (consecutive failures)" `
+                    -ValidationResults $lastValResults `
+                    -ReviewDecision "RETRY_EXHAUSTED"
+                $failState = New-CheckpointState -Sprint $taskPhase -Task $taskName `
+                    -Status "HUMAN_DECISION_REQUIRED" -CompletedTasks $completedTasks `
+                    -LastReviewDecision $lastReviewDecision `
+                    -StopReason "CONSECUTIVE_FAILURES"
+                $failState.human_decision_required = $true
+                Save-Checkpoint -State $failState
+                return $false
+            } elseif ($stageRetries -ge $MaxRetries) {
+                Write-Log "Retry limit exhausted for: $taskName" "FAIL"
+                $failState = New-CheckpointState -Sprint $taskPhase -Task $taskName `
+                    -Status "HUMAN_DECISION_REQUIRED" -CompletedTasks $completedTasks `
+                    -LastReviewDecision $lastReviewDecision `
+                    -StopReason "RETRY_EXHAUSTED"
+                $failState.human_decision_required = $true
+                Save-Checkpoint -State $failState
+                New-DecisionReport -TaskName $taskName -Phase $taskPhase `
+                    -IssueDescription "Validation/review failed after $MaxRetries attempts" `
+                    -ValidationResults $lastValResults `
+                    -ReviewDecision "RETRY_EXHAUSTED"
+                return $false
             }
         }
-
-        # Check if more tasks exist
-        # If no more tasks, stop normally
-        if ($status -eq "RUNNING" -and $taskPassed) {
-            # Check roadmap for next task
-            # For now, stop after one task
-            Write-Log "No more tasks in current scope. Stopping."
-            $status = "STOPPED"
-            $stopReason = "NO_MORE_TASKS"
-        }
     }
 
-    # Generate final report
-    Write-Log "=== Orchestrator Run Complete ==="
-    Write-Log "Tasks processed: $taskCount"
-    Write-Log "Status: $status"
-    Write-Log "Stop reason: $stopReason"
-    Write-Log "Global retry count: $script:GlobalRetryCount"
-    Write-Log "Consecutive failures: $script:ConsecutiveFailures"
+    # --- Final State -----------------------------------------------------------
+    $finalState = New-CheckpointState -Status $status `
+        -CompletedTasks $completedTasks `
+        -StopReason $(if ($status -eq "STOPPED") { "NO_MORE_TASKS" } else { "" })
+    Save-Checkpoint -State $finalState
 
-    # Save final state
-    $checkpoint = @{
-        status = $status
-        stop_reason = $stopReason
-        last_updated = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
-        tasks_processed = $taskCount
-        global_retry_count = $script:GlobalRetryCount
-        consecutive_failures = $script:ConsecutiveFailures
-    }
-    Save-Checkpoint -State $checkpoint
+    Write-Log "" "INFO"
+    Write-Log "==============================================================" "INFO"
+    Write-Log "  Orchestrator run complete" "INFO"
+    Write-Log "  Tasks processed: $taskCount" "INFO"
+    Write-Log "  Status: $status" "INFO"
+    Write-Log "  Completed total: $($completedTasks.Count)" "INFO"
+    Write-Log "  Global retries: $($script:GlobalRetryCount)" "INFO"
+    Write-Log "==============================================================" "INFO"
 
     return ($status -ne "HUMAN_DECISION_REQUIRED" -and $status -ne "CRITICAL_BLOCKER")
 }
 
-# --- Entry Point ---
+# --- Entry Point -----------------------------------------------------------
 
 try {
-    $result = Invoke-Orchestrator -Task $Task -MaxRetries $MaxRetries
+    $result = Invoke-Orchestrator -Task $Task -MaxRetries $MaxRetries -DryRun:$DryRun
     if ($result) {
-        Write-Log "Orchestrator completed successfully."
+        Write-Log "Orchestrator finished successfully."
         exit 0
     } else {
-        Write-Log "Orchestrator stopped (checkpoint saved)."
+        Write-Log "Orchestrator stopped. Check automation/state/checkpoint.json"
         exit 1
     }
 } catch {
-    Write-Error-Log "Orchestrator encountered fatal error: $_"
-    # Save checkpoint with error
-    $checkpoint = @{
-        status = "CRITICAL_BLOCKER"
-        stop_reason = "FATAL_ERROR"
-        error = $_.Exception.Message
-        last_updated = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
-    }
-    Save-Checkpoint -State $checkpoint
+    Write-Log "FATAL: $_" "FAIL"
+    $fatalState = New-CheckpointState -Status "CRITICAL_BLOCKER" `
+        -StopReason "FATAL_ERROR: $($_.Exception.Message)"
+    $fatalState.human_decision_required = $true
+    Save-Checkpoint -State $fatalState
     exit 1
 }

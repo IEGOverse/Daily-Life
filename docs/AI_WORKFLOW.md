@@ -76,20 +76,34 @@ Continue to Next Task or Stop
 ## Invocation of OpenCode
 
 OpenCode is invoked via the `opencode` command available in the system PATH.
+Verified against OpenCode CLI **1.18.18**.
+
+> **IMPORTANT**: There is NO `--task`, `--context`, or `--skill` flag on the
+> installed OpenCode CLI. The correct flags are `--prompt`/`run`, `--agent`,
+> and `--format json`.
 
 ```powershell
 # Check availability
 Get-Command opencode
 
-# Invoke OpenCode for a task
-opencode --task "<task description>" --context "<project context>"
+# Run a message (non-interactive, machine-readable JSON output)
+opencode run "<message>" --format json --auto
 
-# Or in the project directory
-cd C:\Users\USER\daily_life
-opencode "Implement Sprint 1: Today dashboard with actual drift database data"
+# Run with a specific agent
+opencode run "<message>" --agent explorer --format json --auto
+
+# Equivalent positional form
+opencode "<message>"
 ```
 
-If `opencode` is not available in the PATH, the orchestrator must document the blocker instead of inventing an integration.
+The `--agent` flag selects a configured agent (e.g. `explorer` from
+`~/.config/opencode/opencode.json`). The `--auto` flag auto-approves
+permissions not explicitly denied (used only in the orchestrator context).
+`--format json` produces machine-readable output for decision parsing.
+
+If `opencode` is not available in the PATH, the orchestrator records a
+`CRITICAL_BLOCKER` in the checkpoint and stops — it does not invent an
+integration.
 
 ## Human Decision Required
 

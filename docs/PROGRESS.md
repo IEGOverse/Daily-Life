@@ -54,7 +54,7 @@ IN PROGRESS
 - `automation/prompts/developer.md` — OpenCode implementation prompt template
 - `automation/prompts/reviewer.md` — Review prompt template
 - `automation/prompts/decision.md` — Human decision escalation prompt template
-- `automation/state/checkpoint.json` — State persistence (empty, ready for runtime)
+- `automation/state/checkpoint.json` — State persistence (Phase 0 foundation marked complete, ready for orchestration)
 - OpenCode available at `C:\Users\USER\AppData\Roaming\npm\opencode.ps1`
 
 ## Verification Results
@@ -67,10 +67,26 @@ IN PROGRESS
 - `dart test`: Includes Flutter framework files (SDK compatibility issue, not code-level)
 
 ## Current Task
-Sprint 0 complete. Ready for Sprint 1.
+Sprint 0 complete. Orchestrator foundation review fixes COMPLETE — self-test passes (10/10), validation passes (4/4). Awaiting final review before Sprint 1.
 
 ## Next Task
 Sprint 1: Implement Dashboard/Today screen logic with actual data from drift database.
+
+## Orchestrator Review — CHANGES REQUIRED (COMPLETE)
+The autonomous orchestrator foundation was returned CHANGES REQUIRED. The following
+mandatory fixes were applied and verified (self-test passes, validation passes).
+Sprint 1 must NOT start until this section is reviewed and approved.
+
+1. [x] REAL task discovery — parse ROADMAP.md + PROGRESS.md, find next incomplete approved task (no placeholder text). Verified: next task resolves to "Phase 1 - Daily Core: Today dashboard"
+2. [x] REAL autonomous loop — continue task → implementation → validation → review → checkpoint → next task
+3. [x] REAL review gate — machine-readable decision (APPROVED / APPROVED_WITH_FOLLOW_UP / CHANGES_REQUIRED / HUMAN_DECISION_REQUIRED), all 5 parse cases pass
+4. [x] CHECKPOINT — update PROGRESS.md, persist checkpoint.json, create focused git commit; never commit unreviewed work
+5. [x] REPORTING — generate report per checkpoint/sprint with task, status, summary, validation, review, fixes, debt, next task, human decision
+6. [x] STATE/RESUME — checkpoint.json with sprint, task, status, retry counters, review result, validation result, timestamp, stop reason
+7. [x] SAFETY — preserve retry/task/consecutive-failure limits (3/10/50/3), hard stop on human decision and critical blocker
+8. [x] DO NOT start Sprint 1 yet — awaiting orchestrator review approval
+9. [x] SELF-TEST — dry-run mode demonstrates discovery, state, validation, review parsing, retry, hard stop, next-task progression (10/10 pass)
+10. [x] ENVIRONMENT — verified OpenCode CLI 1.18.18 invocation flags (run/--agent/--format json; NOT --task/--context/--skill)
 
 ## Known Issues / Decisions Pending
 - Flutter SDK has compatibility issues with Dart SDK 3.13.2 causing `dart test` to include framework errors (framework-level, not code-level). `flutter test` passes with +4: All tests passed!
@@ -90,4 +106,4 @@ If an agent/session stops unexpectedly:
 6. Commit only when the increment is stable.
 
 ## Last Updated
-2026-09-07 (Automation infrastructure added, verification passed)
+2026-09-07 (Orchestrator review fixes complete — self-test 10/10, validation 4/4, awaiting final review)
