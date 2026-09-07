@@ -4,10 +4,10 @@
 > The repository, Git history, and this file are authoritative. Do not rely on previous chat memory.
 
 ## Current Phase
-Phase 1 — Daily Core
+Phase 2 — Workout
 
 ## Current Sprint
-Sprint 1 — Daily Core (IN PROGRESS)
+Sprint 2 — Workout (IN PROGRESS)
 
 ## Overall Status
 IN PROGRESS
@@ -27,6 +27,7 @@ IN PROGRESS
 - [x] Phase 1 Task 4 — Activity completion (done/skip/reset inline actions on dashboard timeline; auto-refresh; persisted)
 - [x] Phase 1 Task 5 — Calendar/history (month calendar grid + per-day activity list with completion actions; routed at `/calendar`, reachable from the dashboard date header)
 - [x] Phase 1 Task 6 — Add activity (quick-add form: title, category, date, start/end time, notes; saves via `ActivityRepository.insert` and refreshes providers; `/add` route + dashboard quick-add icon) — Phase 1 (Sprint 1) COMPLETE
+- [x] Phase 2 Task 1 — Exercise library (PRD §7): `Exercise` domain model, `ExerciseRepository` + lazy single-flight idempotent seeding of 15 standard exercises with instructions, `exercisesProvider`/`exerciseByIdProvider`, `/workout` library browser (muscle-group chips + search + empty state), `/workout/exercise/:id` detail with instructions, `/workout/add` quick-add form; DB helpers (`getAllExercises`, `getExerciseById`, `getExercisesByMuscleGroup`, `insertExercise`, `deleteExercise`)
 
 ## Sprint 0 Checklist
 - [x] Verify Flutter/Dart installation
@@ -65,14 +66,14 @@ IN PROGRESS
 
 ## Verification Results
 - `dart analyze lib/`: No issues found
-- `dart format --output=none .`: 0 changes
-- `flutter test`: All tests passed
-- `flutter build bundle`: Compiles successfully (real Flutter compile check, no mobile SDK needed)
+- `dart format --output=none lib test`: clean
+- `flutter test`: 68 tests passed
+- `flutter build bundle`: exit 0
 - `build_runner`: 38 outputs generated successfully
 
 ## Current Task
-Sprint 1 — Phase 1 (Daily Core) is COMPLETE and closed. Six increments committed
-and pushed, sprint code-review gate passed.
+Phase 2 — Workout Task 1 (Exercise library) is implemented and validated. The
+task checkpoint is being committed; next is Task 2 (Workout plans).
 
 CODE REVIEW (Stage 5) — PASSED after two CHANGES_REQUIRED rounds:
 - Round A findings (all fixed): HIGH — schedule-generated activities stored
@@ -95,10 +96,9 @@ millisecond instant; reader returns a local `DateTime`. Hence write-side
 queries compare local-midnight UTC instants — consistent end to end.
 
 ## Next Task
-Phase 2 — Workout (approved roadmap): Exercise library, Workout plans, Workout
-sessions, Set logging, History. Begin with Task 1 (Exercise library) reusing the
-approved Activity entity (`referenceId`/`referenceType`) and the
-exercise/workout tables already defined in the schema.
+Phase 2 — Workout Task 2: Workout plans. Use the existing `WorkoutPlans` and
+`WorkoutPlanExercises` tables to create, browse, and inspect plans while keeping
+exercise access behind the workout repository/providers.
 
 ## Orchestrator Review — Round 2 Fixes (COMPLETE)
 Second round of orchestrator review fixes applied and verified. Sprint 1 must NOT
@@ -149,6 +149,13 @@ per `docs/DATABASE.md`):
 - `flutter build bundle`: exit 0
 - Review: APPROVED (after 2 CHANGES_REQUIRED rounds → fixes → re-review)
 
+## Phase 2 — Workout Task Status
+- [x] 1. Exercise library — DONE (checkpoint pending/pushed with this increment)
+- [ ] 2. Workout plans — NEXT
+- [ ] 3. Workout sessions
+- [ ] 4. Set logging
+- [ ] 5. History
+
 ## Known Issues / Decisions Pending
 - Flutter SDK has compatibility issues with Dart SDK 3.13.2 causing `dart test` to include framework errors (framework-level, not code-level). `flutter test` passes with +4: All tests passed!
 - `dart compile kernel` requires Flutter Dart SDK (dart:ui not available on standalone Dart VM — expected behavior)
@@ -167,4 +174,4 @@ If an agent/session stops unexpectedly:
 6. Commit only when the increment is stable.
 
 ## Last Updated
-2026-09-08 (Sprint 1 closed: Phase 1 Daily Core complete; review APPROVED; analyze clean, tests 53/53, build bundle exit 0)
+2026-09-08 (Phase 2 Task 1 complete: exercise library; 68 tests, analyze clean, build bundle exit 0)

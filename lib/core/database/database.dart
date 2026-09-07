@@ -131,6 +131,23 @@ class AppDatabase extends _$AppDatabase {
     );
   }
 
+  // --- Exercises (workout library) ----------------------------------------
+  Future<List<Exercise>> getAllExercises() =>
+      (select(exercises)
+            ..orderBy([
+              (t) => OrderingTerm.asc(t.muscleGroup),
+              (t) => OrderingTerm.asc(t.name),
+            ]))
+          .get();
+  Future<Exercise?> getExerciseById(String id) =>
+      (select(exercises)..where((t) => t.id.equals(id))).getSingleOrNull();
+  Future<List<Exercise>> getExercisesByMuscleGroup(String muscleGroup) =>
+      (select(exercises)..where((t) => t.muscleGroup.equals(muscleGroup))).get();
+  Future<void> insertExercise(Exercise exercise) =>
+      into(exercises).insert(exercise);
+  Future<void> deleteExercise(String id) =>
+      (delete(exercises)..where((t) => t.id.equals(id))).go();
+
   // --- Transactions -------------------------------------------------------
   Future<List<Transaction>> getTransactionsForDay(DateTime day) async {
     final start = _localStartOfDay(day);
