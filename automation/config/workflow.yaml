@@ -1,0 +1,134 @@
+# Workflow Configuration
+
+# Maximum number of retry attempts per task
+max_retries:
+  validation: 3
+  fix: 3
+  review: 3
+  build: 3
+  # Total per task: max 12 attempts before HUMAN_DECISION_REQUIRED
+
+# Stop conditions
+stop_conditions:
+  human_decision_required: true  # Hard stop
+  critical_blocker: true         # Hard stop
+  max_retries_exceeded: true     # Hard stop after 12 total attempts
+  no_more_tasks: true            # Normal stop
+  unresolved_sdk_issue: true     # Hard stop
+
+# OpenCode invocation
+opencode:
+  command: "opencode"
+  check_command: "Get-Command opencode"
+  timeout_seconds: 300
+  # If opencode is not available, the orchestrator must document the blocker
+
+# Validation commands
+validation:
+  format: "dart format --output=none ."
+  analyze: "dart analyze lib/"
+  test: "dart test"
+  build: "dart compile kernel lib/main.dart"
+  flutter_analyze: "flutter analyze"
+  # All must pass for validation to succeed
+
+# Review configuration
+review:
+  skills:
+    - "review"
+    - "review-bugbot"
+    - "review-security"
+  max_attempts: 3
+  # Review must pass before committing
+
+# State persistence
+state:
+  checkpoint_file: "automation/state/checkpoint.json"
+  report_dir: "automation/state/reports/"
+  update_on_task_complete: true
+  update_on_validation_pass: true
+
+# Progress documentation
+progress:
+  file: "docs/PROGRESS.md"
+  update_on_complete: true
+  update_on_stop: true
+
+# Git configuration
+git:
+  commit_on_complete: true
+  commit_message_format: "<type>: <description>"
+  push_on_complete: false  # Set to true if pushing is desired
+  branch: "main"
+
+# Safety limits
+safety:
+  max_tasks_per_run: 10     # Prevent runaway execution
+  max_total_retries: 50     # Global retry limit
+  max_consecutive_failures: 3  # Stop after 3 consecutive task failures
+  require_human_approval_for_roadmap_changes: true
+
+# Type Definitions
+# Task status values
+task_status:
+  - IN_PROGRESS
+  - COMPLETED
+  - PARTIAL
+  - FAILED
+  - BLOCKED
+
+# Orchestrator status values
+orchestrator_status:
+  - RUNNING
+  - PAUSED
+  - STOPPED
+  - HUMAN_DECISION_REQUIRED
+  - CRITICAL_BLOCKER
+
+# Validation result values
+validation_result:
+  - PASS
+  - FAIL
+  - WARNING
+  - ERROR
+
+# Environment Checks
+required_tools:
+  - name: "dart"
+    check: "dart --version"
+    required: true
+  - name: "flutter"
+    check: "flutter --version"
+    required: true
+  - name: "opencode"
+    check: "Get-Command opencode"
+    required: true
+  - name: "build_runner"
+    check: "dart run build_runner --help"
+    required: true
+
+# Optional tools
+optional_tools:
+  - name: "flutter_test"
+    check: "flutter test --help"
+    required: false
+
+# Retry Policy
+retry_policy:
+  # Number of attempts before escalating
+  validation_max: 3
+  fix_max: 3
+  review_max: 3
+  build_max: 3
+
+  # Backoff between retries (seconds)
+  backoff_seconds: 5
+
+  # After exhausting retries, escalate to human
+  escalate_on_exhaustion: true
+
+  # Global retry limit
+  global_max_retries: 50
+
+  # Consecutive task failure limit
+  consecutive_failure_limit: 3

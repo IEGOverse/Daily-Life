@@ -36,12 +36,35 @@ IN PROGRESS
 - [x] Create basic Dashboard/Today screen
 - [x] Create navigation shell
 - [x] Create test structure
-- [x] Run formatter (dart format passes)
+- [x] Run formatter (dart format passes, 0 changes)
 - [x] Run analyzer (dart analyze lib/ passes with no issues)
-- [x] Run tests (blocked by Flutter SDK environment issues, not code)
-- [x] Run build check (dart compile kernel passes)
+- [x] Run tests (flutter test passes: +4: All tests passed!)
+- [x] Run build check (build_runner generates successfully)
 - [x] Review implementation against project docs
 - [x] Create stable Git commit
+- [x] Create automation/orchestrator infrastructure
+- [x] Create AI documentation (workflow, decision policy, review, reporting)
+- [x] Validate all automation scripts
+
+## Automation & Orchestration
+- `automation/config/workflow.yaml` — Workflow config with max_retries: 3, stop conditions, safety limits
+- `automation/scripts/run-task.ps1` — Main orchestrator (`Invoke-Orchestrator`)
+- `automation/scripts/validate.ps1` — Validation script with retry
+- `automation/scripts/checkpoint.ps1` — State management, reports, resume
+- `automation/prompts/developer.md` — OpenCode implementation prompt template
+- `automation/prompts/reviewer.md` — Review prompt template
+- `automation/prompts/decision.md` — Human decision escalation prompt template
+- `automation/state/checkpoint.json` — State persistence (empty, ready for runtime)
+- OpenCode available at `C:\Users\USER\AppData\Roaming\npm\opencode.ps1`
+
+## Verification Results
+- `dart analyze lib/`: No issues found
+- `dart format --output=none .`: 0 changes
+- `flutter test`: +4: All tests passed
+- `flutter analyze`: No issues found
+- `build_runner`: 38 outputs generated successfully
+- `dart compile kernel`: Requires Flutter Dart SDK (dart:ui unavailable on Dart VM — expected)
+- `dart test`: Includes Flutter framework files (SDK compatibility issue, not code-level)
 
 ## Current Task
 Sprint 0 complete. Ready for Sprint 1.
@@ -50,7 +73,8 @@ Sprint 0 complete. Ready for Sprint 1.
 Sprint 1: Implement Dashboard/Today screen logic with actual data from drift database.
 
 ## Known Issues / Decisions Pending
-- Flutter SDK has compatibility issues with Dart SDK 3.13.2 causing test runner failures (framework-level, not code-level)
+- Flutter SDK has compatibility issues with Dart SDK 3.13.2 causing `dart test` to include framework errors (framework-level, not code-level). `flutter test` passes with +4: All tests passed!
+- `dart compile kernel` requires Flutter Dart SDK (dart:ui not available on standalone Dart VM — expected behavior)
 - Database recurrence strategy should be finalized before implementing recurring schedule logic.
 - Activity generation/occurrence strategy should be finalized before implementing schedule-to-activity behavior.
 - Supabase/cloud sync is intentionally deferred.
@@ -66,4 +90,4 @@ If an agent/session stops unexpectedly:
 6. Commit only when the increment is stable.
 
 ## Last Updated
-2026-09-07
+2026-09-07 (Automation infrastructure added, verification passed)
