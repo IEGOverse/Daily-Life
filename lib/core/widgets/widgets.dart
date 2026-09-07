@@ -69,6 +69,7 @@ class ActivityCard extends StatelessWidget {
   final String status;
   final IconData icon;
   final VoidCallback? onTap;
+  final Widget? trailing;
 
   const ActivityCard({
     super.key,
@@ -78,6 +79,7 @@ class ActivityCard extends StatelessWidget {
     required this.status,
     required this.icon,
     this.onTap,
+    this.trailing,
   });
 
   @override
@@ -106,6 +108,7 @@ class ActivityCard extends StatelessWidget {
               Text(status, style: Theme.of(context).textTheme.labelSmall),
             ],
           ),
+          if (trailing != null) ...[const SizedBox(width: 4), trailing!],
         ],
       ),
     );

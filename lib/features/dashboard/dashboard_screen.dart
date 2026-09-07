@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/widgets/widgets.dart';
+import '../activities/activity_providers.dart';
 import '../activities/domain/activity.dart';
 import '../activities/domain/activity_status.dart';
 import 'dashboard_providers.dart';
@@ -285,14 +286,14 @@ class _NextUp extends StatelessWidget {
   }
 }
 
-class _Timeline extends StatelessWidget {
+class _Timeline extends ConsumerWidget {
   final List<Activity> activities;
   final DateTime now;
 
   const _Timeline({required this.activities, required this.now});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       children: [
         for (final activity in activities) ...[
@@ -302,6 +303,13 @@ class _Timeline extends StatelessWidget {
             time: _timeRange(activity),
             status: _statusLabel(activity, now),
             icon: iconForCategory(activity.category),
+            trailing: _CompletionActions(
+              activity: activity,
+              onDone: () => _setStatus(ref, activity, ActivityStatus.completed),
+              onSkip: () => _setStatus(ref, activity, ActivityStatus.skipped),
+              onReset: () =>
+                  _setStatus(ref, activity, ActivityStatus.scheduled),
+            ),
           ),
           const SizedBox(height: 8),
         ],
@@ -324,6 +332,67 @@ class _Timeline extends StatelessWidget {
     }
     return 'Scheduled';
   }
+}
+
+/// Inline complete / skip / reset actions for a timeline activity.
+///
+/// For future/open-now activities a two-button row (Done / Skip) is shown;
+/// for completed/skipped activities a single reset button restores Scheduled.
+class _CompletionActions extends StatelessWidget {
+  final Activity activity;
+  final VoidCallback onDone;
+  final VoidCallback onSkip;
+  final VoidCallback onReset;
+
+  const _CompletionActions({
+    required this.activity,
+    required this.onDone,
+    required this.onSkip,
+    required this.onReset,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (activity.status == ActivityStatus.completed) {
+      return IconButton(
+        tooltip: 'Reset',
+        icon: const Icon(Icons.refresh),
+        onPressed: onReset,
+      );
+    }
+    if (activity.status == ActivityStatus.skipped) {
+      return IconButton(
+        tooltip: 'Reset',
+        icon: const Icon(Icons.refresh),
+        onPressed: onReset,
+      );
+    }
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          tooltip: 'Mark done',
+          icon: const Icon(Icons.check_circle_outline),
+          onPressed: onDone,
+        ),
+        IconButton(
+          tooltip: 'Skip',
+          icon: const Icon(Icons.remove_circle_outline),
+          onPressed: onSkip,
+        ),
+      ],
+    );
+  }
+}
+
+Future<void> _setStatus(
+  WidgetRef ref,
+  Activity activity,
+  ActivityStatus status,
+) async {
+  await ref.read(activityRepositoryProvider).updateStatus(activity.id, status);
+  ref.invalidate(dashboardSummaryProvider);
+  ref.invalidate(activitiesForDayProvider);
 }
 
 class _FinanceSummary extends StatelessWidget {

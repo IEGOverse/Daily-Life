@@ -24,6 +24,7 @@ IN PROGRESS
 - [x] Phase 1 Task 1 — Today dashboard (greeting, daily progress, NOW/NEXT UP, timeline, finance strip; driven by live drift data)
 - [x] Phase 1 Task 2 — Recurring schedule (PRD §5 university schedule seeded; weekly activity generation idempotent; Schedule screen with day selector)
 - [x] Phase 1 Task 3 — Activity model (shared `activities` feature: central model, status lifecycle, repository; dashboard/schedule rewire over it)
+- [x] Phase 1 Task 4 — Activity completion (done/skip/reset inline actions on dashboard timeline; auto-refresh; persisted)
 
 ## Sprint 0 Checklist
 - [x] Verify Flutter/Dart installation
@@ -70,28 +71,24 @@ IN PROGRESS
 ## Current Task
 Sprint 1 in progress.
 
-DONE (Third increment, committed): Task 3 — Activity model.
-The central activity concept was promoted from the dashboard feature into a
-shared `activities` feature per ARCHITECTURE §3 structure:
-- `lib/features/activities/domain/activity.dart` — the central `Activity`
-  entity (id, scheduleId, title, category, start/end, status, referenceId/
-  referenceType for specialized modules, notes) + `isCurrentAt`/`isUpcomingAfter`
-  + `compareByStart`
-- `lib/features/activities/domain/activity_status.dart` — `ActivityStatus`
-  enum (scheduled/upcoming/inProgress/completed/skipped) + `isActionable`
-- `lib/features/activities/data/activity_repository.dart` — data layer CRUD +
-  day/range/schedule queries returning domain models
-- `lib/features/activities/activity_providers.dart` — `activityRepositoryProvider`
-  + `activitiesForDayProvider` (family)
-- Dashboard rewired: `DashboardSummary` now holds `Activity`; it and the screen
-  no longer own their own model (the local `today_activity.dart` was removed);
-  tests updated to the shared model
+DONE (Fourth increment, committed): Task 4 — Activity completion.
+`ActivityCard` gained an optional `trailing` slot. The dashboard timeline now
+renders inline actions per activity: a Done (`check_circle_outline`) and Skip
+(`remove_circle_outline`) pair for actionable activities, and a Reset
+(`refresh`) button for completed/skipped ones. Tapping persists via
+`ActivityRepository.updateStatus` (→ `setActivityStatus`) then invalidates
+`dashboardSummaryProvider` and `activitiesForDayProvider`, so progress, NOW/NEXT
+UP, and timeline all refresh. Widget test pumps a real in-memory DB and asserts
+the status write + UI refresh.
 
 ## Next Task
-Task 4 — Activity completion: mark an activity completed/skipped from the
-dashboard timeline and the Schedule screen using `ActivityRepository.updateStatus`
-(already on `setActivityStatus`). Add interactive affordances on cards plus
-widget test coverage, then Task 5 (Calendar/history) and Task 6 (Add activity).
+Task 5 — Calendar/history: browse activities across days (a history view) so
+users can see past/future activity records beyond "today" and the weekly
+schedule. Likely: a calendar/history screen reachable from the dashboard or
+primary nav, showing a month grid + selected day's activities, or a scrollable
+recent-history list; reuses `ActivityRepository.getForRange`. Consider a
+`historyScreen` route + a lightweight date picker/calendar widget (avoid heavy
+third-party packages unless approved).
 
 ## Orchestrator Review — Round 2 Fixes (COMPLETE)
 Second round of orchestrator review fixes applied and verified. Sprint 1 must NOT
@@ -129,14 +126,14 @@ per `docs/DATABASE.md`):
 - [x] 1. Today dashboard — DONE (committed)
 - [x] 2. Recurring schedule — DONE (committed)
 - [x] 3. Activity model — DONE (committed)
-- [ ] 4. Activity completion
+- [x] 4. Activity completion — DONE (committed)
 - [ ] 5. Calendar/history
 - [ ] 6. Add activity
 
-## Verification Results (Task 3 increment)
+## Verification Results (Task 4 increment)
 - `dart analyze lib/ test/`: No issues found
 - `dart format --output=none lib/ test/`: clean
-- `flutter test`: All 45 tests passed (+45)
+- `flutter test`: All 46 tests passed (+46)
 - `flutter build bundle`: exit 0
 
 ## Known Issues / Decisions Pending
@@ -157,4 +154,4 @@ If an agent/session stops unexpectedly:
 6. Commit only when the increment is stable.
 
 ## Last Updated
-2026-09-07 (Sprint 1 increment — Task 3 Activity model committed; analyze clean, tests 45/45, build bundle exit 0)
+2026-09-07 (Sprint 1 increment — Task 4 Activity completion committed; analyze clean, tests 46/46, build bundle exit 0)

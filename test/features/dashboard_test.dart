@@ -2,6 +2,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:daily_life/core/database/database.dart' as db;
+import 'package:daily_life/core/database/database_provider.dart';
 import 'package:daily_life/features/dashboard/data/dashboard_repository.dart';
 import 'package:daily_life/features/dashboard/dashboard_providers.dart';
 import 'package:daily_life/features/dashboard/dashboard_screen.dart';
@@ -288,6 +289,54 @@ void main() {
       expect(find.text('Business Process Reengineering'), findsOneWidget);
       expect(find.text('Data Mining'), findsOneWidget);
       expect(find.text('NEXT UP'), findsOneWidget);
+    });
+
+    testWidgets('marking an activity done persists and refreshes', (
+      tester,
+    ) async {
+      final database = db.AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+
+      await database.insertActivity(
+        db.Activity(
+          id: 'a1',
+          title: 'Math',
+          category: 'study',
+          startTime: DateTime(2026, 9, 8, 9),
+          endTime: DateTime(2026, 9, 8, 10),
+          status: 'scheduled',
+          scheduleId: null,
+          notes: null,
+          createdAt: DateTime.now(),
+        ),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWithValue(database),
+            clockProvider.overrideWithValue(DateTime(2026, 9, 8, 9, 30)),
+          ],
+          child: const MaterialApp(home: DashboardScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Initially scheduled and shows the Done + Skip actions.
+      expect(find.text('Math'), findsNWidgets(2)); // timeline + NEXT UP
+      expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
+      expect(find.byIcon(Icons.remove_circle_outline), findsOneWidget);
+
+      // Tap Done.
+      await tester.tap(find.byIcon(Icons.check_circle_outline));
+      await tester.pumpAndSettle();
+
+      // The summary refresh should now reflect completion.
+      final stored = await database.getActivityById('a1');
+      expect(stored!.status, 'completed');
+      expect(find.byIcon(Icons.check_circle_outline), findsNothing);
+      // Completed rows show a reset button instead.
+      expect(find.byIcon(Icons.refresh), findsWidgets);
     });
   });
 }
