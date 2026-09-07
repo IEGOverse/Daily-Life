@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:daily_life/core/database/database.dart';
 
 void main() {
   group('Database schema', () {
