@@ -12,7 +12,16 @@ class WorkoutSessionsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final sessions = ref.watch(workoutSessionsProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Workout sessions')),
+      appBar: AppBar(
+        title: const Text('Workout sessions'),
+        actions: [
+          IconButton(
+            tooltip: 'Workout history',
+            icon: const Icon(Icons.insights_outlined),
+            onPressed: () => context.push('/workout/history'),
+          ),
+        ],
+      ),
       body: sessions.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) =>

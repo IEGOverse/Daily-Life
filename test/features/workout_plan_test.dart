@@ -153,6 +153,11 @@ void main() {
       await tester.tap(find.text('Complete workout'));
       await tester.pumpAndSettle();
       expect(find.text('Completed'), findsOneWidget);
+      container.read(appRouterProvider).go('/workout/history');
+      await tester.pumpAndSettle();
+      expect(find.text('Workouts'), findsOneWidget);
+      expect(find.text('1'), findsWidgets);
+      expect(find.text('Push/Legs'), findsOneWidget);
     });
 
     testWidgets('requires a plan name and one exercise', (tester) async {

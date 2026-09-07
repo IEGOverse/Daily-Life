@@ -90,6 +90,7 @@ class WorkoutSessionDetailScreen extends ConsumerWidget {
                         .complete(value.id);
                     ref.invalidate(workoutSessionByIdProvider(value.id));
                     ref.invalidate(workoutSessionsProvider);
+                    ref.invalidate(workoutHistoryProvider);
                   },
                   icon: const Icon(Icons.check),
                   label: const Text('Complete workout'),

@@ -1,7 +1,7 @@
 {
-  "current_phase": "Phase 2 - Workout",
-  "current_sprint": "Sprint 2 - Workout",
-  "current_task": "Workout history",
+  "current_phase": "Phase 3 - Study",
+  "current_sprint": "Sprint 3 - Study",
+  "current_task": "Study sessions",
   "task_status": "IN_PROGRESS",
   "phase_1_complete": true,
   "sprint_1_closed": true,
@@ -25,7 +25,8 @@
     "Exercise library: repository, 15 seeded exercises, search/filter UI, instructions detail, personal exercise form",
     "Workout plans: transactional plan/link repository, plan list/create/detail screens, exercise selection, default sets/reps/rest",
     "Workout sessions: start-from-plan flow, session detail/history, completion duration, prescribed exercises, timestamp validation, and plan-history retention",
-    "Set logging: concurrent-safe planned-set materialization, reps/weight editing, per-set completion, plan-order presentation, and session set-log screen"
+    "Set logging: concurrent-safe planned-set materialization, reps/weight editing, per-set completion, plan-order presentation, and session set-log screen",
+    "Workout history: completed-session summary, duration/set aggregation, chronological history, and provider freshness invalidation"
   ],
   "validation_retries": 0,
   "fix_retries": 0,
@@ -34,8 +35,8 @@
   "last_validation_result": "PASS",
   "global_retry_count": 0,
   "consecutive_failures": 0,
-  "timestamp": "2026-09-08 03:45:00",
-  "next_action": "Phase 2 - Workout: Task 5 History.",
+  "timestamp": "2026-09-08 04:30:00",
+  "next_action": "Phase 3 - Study: Task 1 Study sessions.",
   "stop_reason": "",
   "human_decision_required": false
 }

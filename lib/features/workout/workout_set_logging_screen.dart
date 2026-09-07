@@ -149,6 +149,7 @@ class _WorkoutSetLoggingScreenState
         );
       }
       ref.invalidate(workoutSetLogsProvider(widget.sessionId));
+      ref.invalidate(workoutHistoryProvider);
       if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(const SnackBar(content: Text('Set logs saved')));

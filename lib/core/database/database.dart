@@ -204,6 +204,8 @@ class AppDatabase extends _$AppDatabase {
               (t) => OrderingTerm.asc(t.setNumber),
             ]))
           .get();
+  Future<List<WorkoutSetLog>> getAllWorkoutSetLogs() =>
+      select(workoutSetLogs).get();
   Future<void> insertWorkoutSetLog(WorkoutSetLog log) =>
       into(workoutSetLogs).insert(log);
   Future<void> updateWorkoutSetLog(

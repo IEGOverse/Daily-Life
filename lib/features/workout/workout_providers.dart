@@ -5,10 +5,12 @@ import 'data/exercise_repository.dart';
 import 'data/workout_plan_repository.dart';
 import 'data/workout_session_repository.dart';
 import 'data/workout_set_log_repository.dart';
+import 'data/workout_history_repository.dart';
 import 'domain/exercise.dart';
 import 'domain/workout_plan.dart';
 import 'domain/workout_session.dart';
 import 'domain/workout_set_log.dart';
+import 'domain/workout_history.dart';
 
 final exerciseRepositoryProvider = Provider<ExerciseRepository>(
   (ref) => ExerciseRepository(ref.watch(databaseProvider)),
@@ -70,3 +72,11 @@ final workoutSetLogsProvider =
           .watch(workoutSetLogRepositoryProvider)
           .ensureForSession(sessionId);
     });
+
+final workoutHistoryRepositoryProvider = Provider<WorkoutHistoryRepository>(
+  (ref) => WorkoutHistoryRepository(ref.watch(databaseProvider)),
+);
+
+final workoutHistoryProvider = FutureProvider<WorkoutHistory>((ref) {
+  return ref.watch(workoutHistoryRepositoryProvider).getSummary();
+});

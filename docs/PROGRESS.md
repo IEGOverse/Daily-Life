@@ -31,6 +31,7 @@ IN PROGRESS
 - [x] Phase 2 Task 2 — Workout plans: transactional plan/link repository, plan providers, `/workout/plans` list and empty state, plan creation with exercise selection and default sets/reps/rest, and `/workout/plans/:planId` detail view
 - [x] Phase 2 Task 3 — Workout sessions: session repository and providers, start-from-plan flow, active/completed session detail, prescribed exercises on the session screen, completion duration, and session history
 - [x] Phase 2 Task 4 — Set logging: `WorkoutSetLogRepository`, concurrent-safe planned-set materialization, reps/weight editing, per-set completion, plan-order presentation, and `/workout/sessions/:sessionId/sets` logging screen
+- [x] Phase 2 Task 5 — Workout history: completed-session summary, total duration, completed-set count, chronological completed-workout list, and `/workout/history`
 
 ## Sprint 0 Checklist
 - [x] Verify Flutter/Dart installation
@@ -75,8 +76,8 @@ IN PROGRESS
 - `build_runner`: 38 outputs generated successfully
 
 ## Current Task
-Phase 2 — Workout Task 4 (Set logging) is implemented and validated. The task
-checkpoint is being committed; next is Task 5 (History).
+Phase 2 — Workout is complete: all five approved tasks are implemented and
+validated. The final task checkpoint is being committed; next is Phase 3 Study.
 
 CODE REVIEW (Stage 5) — PASSED after two CHANGES_REQUIRED rounds:
 - Round A findings (all fixed): HIGH — schedule-generated activities stored
@@ -99,8 +100,8 @@ millisecond instant; reader returns a local `DateTime`. Hence write-side
 queries compare local-midnight UTC instants — consistent end to end.
 
 ## Next Task
-Phase 2 — Workout Task 5: History. Add useful workout history views and derived
-summary values from completed sessions and set logs.
+Phase 3 — Study Task 1: Study sessions. Use the existing `StudySessions` table
+to record subject, date, start/end, duration, understanding, and notes.
 
 ## Orchestrator Review — Round 2 Fixes (COMPLETE)
 Second round of orchestrator review fixes applied and verified. Sprint 1 must NOT
@@ -155,8 +156,11 @@ per `docs/DATABASE.md`):
 - [x] 1. Exercise library — DONE (committed and pushed)
 - [x] 2. Workout plans — DONE (committed and pushed)
 - [x] 3. Workout sessions — DONE (committed and pushed)
-- [x] 4. Set logging — DONE (checkpoint pending/pushed with this increment)
-- [ ] 5. History — NEXT
+- [x] 4. Set logging — DONE (committed and pushed)
+- [x] 5. History — DONE (checkpoint pending/pushed with this increment)
+
+## Phase 2 — Workout Status
+- COMPLETE — all five approved tasks delivered and validated.
 - [ ] 5. History
 
 ## Known Issues / Decisions Pending
@@ -177,4 +181,4 @@ If an agent/session stops unexpectedly:
 6. Commit only when the increment is stable.
 
 ## Last Updated
-2026-09-08 (Phase 2 Task 4 complete: set logging; 76 tests, analyze clean, build bundle exit 0)
+2026-09-08 (Phase 2 complete: Workout; 76 tests, analyze clean, build bundle exit 0)
