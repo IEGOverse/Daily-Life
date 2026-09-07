@@ -5,8 +5,9 @@ import 'package:daily_life/core/database/database.dart' as db;
 import 'package:daily_life/features/dashboard/data/dashboard_repository.dart';
 import 'package:daily_life/features/dashboard/dashboard_providers.dart';
 import 'package:daily_life/features/dashboard/dashboard_screen.dart';
+import 'package:daily_life/features/activities/domain/activity.dart';
+import 'package:daily_life/features/activities/domain/activity_status.dart';
 import 'package:daily_life/features/dashboard/domain/dashboard_summary.dart';
-import 'package:daily_life/features/dashboard/domain/today_activity.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -31,8 +32,8 @@ void main() {
     });
   });
 
-  group('TodayActivity time logic', () {
-    final activity = TodayActivity(
+  group('Activity time logic', () {
+    final activity = Activity(
       id: 'a1',
       title: 'Study',
       category: 'study',
@@ -52,7 +53,7 @@ void main() {
     });
 
     test('completed/skipped activities are not current or upcoming', () {
-      final completed = TodayActivity(
+      final completed = Activity(
         id: 'a1',
         title: 'Study',
         category: 'study',
@@ -65,7 +66,7 @@ void main() {
     });
 
     test('open-ended activity without end time is current after start', () {
-      final openEnded = TodayActivity(
+      final openEnded = Activity(
         id: 'a1',
         title: 'Task',
         category: 'personal',
@@ -80,7 +81,7 @@ void main() {
 
   group('DashboardSummary', () {
     final activities = [
-      TodayActivity(
+      Activity(
         id: 'a1',
         title: 'Morning run',
         category: 'workout',
@@ -88,7 +89,7 @@ void main() {
         endTime: DateTime(2026, 9, 8, 8),
         status: ActivityStatus.completed,
       ),
-      TodayActivity(
+      Activity(
         id: 'a2',
         title: 'Math',
         category: 'study',
@@ -96,7 +97,7 @@ void main() {
         endTime: DateTime(2026, 9, 8, 11),
         status: ActivityStatus.scheduled,
       ),
-      TodayActivity(
+      Activity(
         id: 'a3',
         title: 'Lunch',
         category: 'nutrition',
@@ -254,7 +255,7 @@ void main() {
       final summary = DashboardSummary(
         day: DateTime(2026, 9, 8, 12),
         activities: [
-          TodayActivity(
+          Activity(
             id: 'a1',
             title: 'Business Process Reengineering',
             category: 'study',
@@ -262,7 +263,7 @@ void main() {
             endTime: DateTime(2026, 9, 8, 11, 30),
             status: ActivityStatus.scheduled,
           ),
-          TodayActivity(
+          Activity(
             id: 'a2',
             title: 'Data Mining',
             category: 'study',

@@ -1,15 +1,17 @@
 {
   "current_sprint": "Sprint 1 - Phase 1: Daily Core",
-  "current_task": "2. Recurring schedule",
+  "current_task": "3. Activity model",
   "task_status": "COMPLETED",
   "completed_tasks": [
     "1. Today dashboard",
     "2. Recurring schedule",
+    "3. Activity model",
     "Database schema v2 (nullable fields + foreign-key declarations)",
-    "Dashboard data access (repository + domain + providers)",
     "Schedule seeding (PRD §5 university classes)",
     "Idempotent weekly activity generation",
-    "Schedule screen (day selector + class list)"
+    "Schedule screen (day selector + class list)",
+    "Shared activities feature (domain + repository + providers)",
+    "Dashboard rewired onto shared Activity model"
   ],
   "validation_retries": 0,
   "fix_retries": 0,
@@ -18,7 +20,7 @@
   "last_validation_result": "PASS",
   "global_retry_count": 0,
   "consecutive_failures": 0,
-  "timestamp": "2026-09-07 22:00:00",
+  "timestamp": "2026-09-07 22:40:00",
   "stop_reason": "",
   "human_decision_required": false
 }

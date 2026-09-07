@@ -1,4 +1,5 @@
-import 'today_activity.dart';
+import '../../activities/domain/activity.dart';
+import '../../activities/domain/activity_status.dart';
 
 /// Finance totals derived from a day's transactions.
 class FinanceSummary {
@@ -22,7 +23,7 @@ class FinanceSummary {
 /// Aggregated view of a single day for the Today dashboard.
 class DashboardSummary {
   final DateTime day;
-  final List<TodayActivity> activities;
+  final List<Activity> activities;
   final FinanceSummary finance;
 
   const DashboardSummary({
@@ -45,7 +46,7 @@ class DashboardSummary {
   }
 
   /// The activity happening right now at [now], if any.
-  TodayActivity? currentActivityAt(DateTime now) {
+  Activity? currentActivityAt(DateTime now) {
     for (final activity in activities) {
       if (activity.isCurrentAt(now)) {
         return activity;
@@ -55,7 +56,7 @@ class DashboardSummary {
   }
 
   /// The next activity that starts strictly after [now], if any.
-  TodayActivity? nextActivityAfter(DateTime now) {
+  Activity? nextActivityAfter(DateTime now) {
     final upcoming = activities.where((a) => a.isUpcomingAfter(now)).toList()
       ..sort(compareByStart);
     return upcoming.isEmpty ? null : upcoming.first;

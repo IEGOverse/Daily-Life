@@ -1,6 +1,6 @@
 import '../../../core/database/database.dart' as db;
+import '../../activities/domain/activity.dart';
 import '../domain/dashboard_summary.dart';
-import '../domain/today_activity.dart';
 
 /// Loads and aggregates the data needed by the Today dashboard.
 class DashboardRepository {
@@ -16,7 +16,7 @@ class DashboardRepository {
     final rows = await _database.getActivitiesForDay(day);
     final transactions = await _database.getTransactionsForDay(day);
 
-    final activities = rows.map(TodayActivity.fromDrift).toList();
+    final activities = rows.map(Activity.fromRow).toList();
     activities.sort(compareByStart);
 
     var finance = FinanceSummary.empty;

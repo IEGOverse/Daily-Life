@@ -23,6 +23,7 @@ IN PROGRESS
 - [x] AI-agent rules defined
 - [x] Phase 1 Task 1 — Today dashboard (greeting, daily progress, NOW/NEXT UP, timeline, finance strip; driven by live drift data)
 - [x] Phase 1 Task 2 — Recurring schedule (PRD §5 university schedule seeded; weekly activity generation idempotent; Schedule screen with day selector)
+- [x] Phase 1 Task 3 — Activity model (shared `activities` feature: central model, status lifecycle, repository; dashboard/schedule rewire over it)
 
 ## Sprint 0 Checklist
 - [x] Verify Flutter/Dart installation
@@ -69,23 +70,28 @@ IN PROGRESS
 ## Current Task
 Sprint 1 in progress.
 
-DONE (Second increment, committed): Task 2 — Recurring schedule.
-`lib/features/schedule/` now contains the schedule feature. `ScheduleSeeder`
-holds the 15 PRD §5 classes (Mon/Wed ×3, Tue/Thu ×3, Thu-only Kuliah Umum,
-Fri ×2). `generateActivitiesForDay` creates activities from active weekly
-schedules idempotently (`hasActivityForSchedule`). `ensureSeededAndGenerated`
-runs once at app startup (via `useSeeding`/`_seedAndGenerateFutureProvider`)
-seeding schedules if empty and generating the current week's activities.
-`ScheduleScreen` shows a Mon–Sun chip selector (current weekday highlighted)
-and the day's class list with time ranges; empty state for weekends.
+DONE (Third increment, committed): Task 3 — Activity model.
+The central activity concept was promoted from the dashboard feature into a
+shared `activities` feature per ARCHITECTURE §3 structure:
+- `lib/features/activities/domain/activity.dart` — the central `Activity`
+  entity (id, scheduleId, title, category, start/end, status, referenceId/
+  referenceType for specialized modules, notes) + `isCurrentAt`/`isUpcomingAfter`
+  + `compareByStart`
+- `lib/features/activities/domain/activity_status.dart` — `ActivityStatus`
+  enum (scheduled/upcoming/inProgress/completed/skipped) + `isActionable`
+- `lib/features/activities/data/activity_repository.dart` — data layer CRUD +
+  day/range/schedule queries returning domain models
+- `lib/features/activities/activity_providers.dart` — `activityRepositoryProvider`
+  + `activitiesForDayProvider` (family)
+- Dashboard rewired: `DashboardSummary` now holds `Activity`; it and the screen
+  no longer own their own model (the local `today_activity.dart` was removed);
+  tests updated to the shared model
 
 ## Next Task
-Task 3 — Activity model: refine the `Activities` row semantics (status
-lifecycle, schedule linkage, manual creation), and surface activities from the
-Schedule screen. Expect to add a dedicated activity feature layer (domain
-models already exist under `dashboard/`); may promote `TodayActivity` usage
-across both dashboard and schedule features. Revisit `ActivityStatus` mapping
-once completion (Task 4) and manual add (Task 6) are wired.
+Task 4 — Activity completion: mark an activity completed/skipped from the
+dashboard timeline and the Schedule screen using `ActivityRepository.updateStatus`
+(already on `setActivityStatus`). Add interactive affordances on cards plus
+widget test coverage, then Task 5 (Calendar/history) and Task 6 (Add activity).
 
 ## Orchestrator Review — Round 2 Fixes (COMPLETE)
 Second round of orchestrator review fixes applied and verified. Sprint 1 must NOT
@@ -122,15 +128,15 @@ per `docs/DATABASE.md`):
 ## Sprint 1 — Current Task Status
 - [x] 1. Today dashboard — DONE (committed)
 - [x] 2. Recurring schedule — DONE (committed)
-- [ ] 3. Activity model
+- [x] 3. Activity model — DONE (committed)
 - [ ] 4. Activity completion
 - [ ] 5. Calendar/history
 - [ ] 6. Add activity
 
-## Verification Results (Task 2 increment)
+## Verification Results (Task 3 increment)
 - `dart analyze lib/ test/`: No issues found
 - `dart format --output=none lib/ test/`: clean
-- `flutter test`: All 34 tests passed (+34)
+- `flutter test`: All 45 tests passed (+45)
 - `flutter build bundle`: exit 0
 
 ## Known Issues / Decisions Pending
@@ -151,4 +157,4 @@ If an agent/session stops unexpectedly:
 6. Commit only when the increment is stable.
 
 ## Last Updated
-2026-09-07 (Sprint 1 increment — Task 2 Recurring schedule committed; analyze clean, tests 34/34, build bundle exit 0)
+2026-09-07 (Sprint 1 increment — Task 3 Activity model committed; analyze clean, tests 45/45, build bundle exit 0)

@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/widgets/widgets.dart';
+import '../activities/domain/activity.dart';
+import '../activities/domain/activity_status.dart';
 import 'dashboard_providers.dart';
 import 'domain/dashboard_summary.dart';
-import 'domain/today_activity.dart';
 
 /// Maps an activity category to a representative icon.
 IconData iconForCategory(String category) {
@@ -202,7 +203,7 @@ class _DailyProgress extends StatelessWidget {
 }
 
 class _CurrentActivity extends StatelessWidget {
-  final TodayActivity activity;
+  final Activity activity;
 
   const _CurrentActivity({required this.activity});
 
@@ -244,7 +245,7 @@ class _CurrentActivity extends StatelessWidget {
 }
 
 class _NextUp extends StatelessWidget {
-  final TodayActivity activity;
+  final Activity activity;
 
   const _NextUp({required this.activity});
 
@@ -285,7 +286,7 @@ class _NextUp extends StatelessWidget {
 }
 
 class _Timeline extends StatelessWidget {
-  final List<TodayActivity> activities;
+  final List<Activity> activities;
   final DateTime now;
 
   const _Timeline({required this.activities, required this.now});
@@ -308,7 +309,7 @@ class _Timeline extends StatelessWidget {
     );
   }
 
-  String _statusLabel(TodayActivity activity, DateTime now) {
+  String _statusLabel(Activity activity, DateTime now) {
     if (activity.status == ActivityStatus.completed) {
       return 'Completed';
     }
@@ -373,7 +374,7 @@ class _FinanceSummary extends StatelessWidget {
   }
 }
 
-String _timeRange(TodayActivity activity) {
+String _timeRange(Activity activity) {
   final end = activity.endTime;
   if (end == null) {
     return _formatTime(activity.startTime);
