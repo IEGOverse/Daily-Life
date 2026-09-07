@@ -26,6 +26,7 @@ IN PROGRESS
 - [x] Phase 1 Task 3 — Activity model (shared `activities` feature: central model, status lifecycle, repository; dashboard/schedule rewire over it)
 - [x] Phase 1 Task 4 — Activity completion (done/skip/reset inline actions on dashboard timeline; auto-refresh; persisted)
 - [x] Phase 1 Task 5 — Calendar/history (month calendar grid + per-day activity list with completion actions; routed at `/calendar`, reachable from the dashboard date header)
+- [x] Phase 1 Task 6 — Add activity (quick-add form: title, category, date, start/end time, notes; saves via `ActivityRepository.insert` and refreshes providers; `/add` route + dashboard quick-add icon) — Phase 1 (Sprint 1) COMPLETE
 
 ## Sprint 0 Checklist
 - [x] Verify Flutter/Dart installation
@@ -70,26 +71,27 @@ IN PROGRESS
 - `build_runner`: 38 outputs generated successfully
 
 ## Current Task
-Sprint 1 in progress.
+Sprint 1 in progress. Phase 1 (Daily Core) is functionally complete; closing out
+the sprint with documentation, the orchestration review gate, and a final
+checkpoint.
 
-DONE (Fifth increment, committed): Task 5 — Calendar/history.
-`CalendarHistoryScreen` (`/calendar`) shows a month calendar grid (weekday
-headers, today outlined, selected day filled, per-day activity-count dots;
-Prev/Next/Today controls) and the selected day's activity list with the same
-Done/Skip/Reset actions as the dashboard. Initial month/day uses `clockProvider`
-(for testability). Activity counts come from `activitiesForMonthProvider`;
-the day list from `activitiesForDayProvider`. Reachable from the dashboard's
-date-header calendar icon. Uses a lightweight in-house month grid (no new
-third-party package).
+DONE (Sixth increment): Task 6 — Add activity.
+`AddActivityScreen` at `/add` is a minimal form (title, category dropdown,
+date + start time pickers, optional end time via a switch, optional notes).
+Save validates, builds an `Activity` with a timestamp-based id, persists via
+`ActivityRepository.insert`, then invalidates the dashboard summary and the
+activity day/month providers so today + calendar refresh automatically.
+Reachable from a new quick-add icon on the dashboard date header (PRD §4: record
+in as few actions as possible). Widget tests drive the full flow through the
+real router + in-memory DB (quick-add lands on today and persists; validation
+blocks empty titles without persisting).
 
 ## Next Task
-Task 6 — Add activity: a form to manually create a one-off Activity (title,
-category, date, start/end time, notes) reusing `ActivityRepository.insert`.
-Wired to the existing `/add` route and Add screen placeholder. This completes
-Phase 1 (Sprint 1). Decisions: whether the Add screen hosts only activities now
-(finance/meals/etc. come in later phases) — keep it activity-only and modular.
-After Task 6, run the full orchestration validation/review gate and update
-checkpoint before closing the sprint.
+Sprint 1 wrap-up. Run the full orchestration validation/review gate
+(`docs/AI_REVIEW.md`) over the six committed increments, close out the sprint
+checkpoint, and start Phase 2 (or the next approved roadmap item). Phase 2
+will add specialized modules (workout/study/finance/nutrition/habits) wired to
+the Activity entity via `referenceId`/`referenceType`.
 
 ## Orchestrator Review — Round 2 Fixes (COMPLETE)
 Second round of orchestrator review fixes applied and verified. Sprint 1 must NOT
@@ -129,12 +131,13 @@ per `docs/DATABASE.md`):
 - [x] 3. Activity model — DONE (committed)
 - [x] 4. Activity completion — DONE (committed)
 - [x] 5. Calendar/history — DONE (committed)
-- [ ] 6. Add activity
+- [x] 6. Add activity — DONE (committed)
+- Phase 1 (Daily Core) — COMPLETE; sprint closing in progress
 
-## Verification Results (Task 5 increment)
+## Verification Results (Task 6 increment)
 - `dart analyze lib/ test/`: No issues found
 - `dart format --output=none lib/ test/`: clean
-- `flutter test`: All 48 tests passed (+48)
+- `flutter test`: All 50 tests passed (+50)
 - `flutter build bundle`: exit 0
 
 ## Known Issues / Decisions Pending
@@ -155,4 +158,4 @@ If an agent/session stops unexpectedly:
 6. Commit only when the increment is stable.
 
 ## Last Updated
-2026-09-07 (Sprint 1 increment — Task 5 Calendar/history committed; analyze clean, tests 48/48, build bundle exit 0)
+2026-09-07 (Sprint 1 increment — Task 6 Add activity committed; analyze clean, tests 50/50, build bundle exit 0; Phase 1 Daily Core complete)

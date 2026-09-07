@@ -28,7 +28,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/schedule',
         builder: (context, state) => const ScheduleScreen(),
       ),
-      GoRoute(path: '/add', builder: (context, state) => const AddScreen()),
+      GoRoute(
+        path: '/add',
+        builder: (context, state) => const AddActivityScreen(),
+      ),
       GoRoute(
         path: '/insights',
         builder: (context, state) => const InsightsScreen(),

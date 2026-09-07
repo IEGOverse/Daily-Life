@@ -125,6 +125,13 @@ class _Greeting extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             IconButton(
+              tooltip: 'Quick add activity',
+              icon: const Icon(Icons.add_circle_outline),
+              visualDensity: VisualDensity.compact,
+              onPressed: () => context.push('/add'),
+            ),
+            const SizedBox(width: 4),
+            IconButton(
               tooltip: 'Calendar & history',
               icon: const Icon(Icons.calendar_month_outlined),
               visualDensity: VisualDensity.compact,

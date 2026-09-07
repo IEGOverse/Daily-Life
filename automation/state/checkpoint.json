@@ -1,13 +1,15 @@
 {
   "current_sprint": "Sprint 1 - Phase 1: Daily Core",
-  "current_task": "5. Calendar/history",
+  "current_task": "6. Add activity",
   "task_status": "COMPLETED",
+  "phase_1_complete": true,
   "completed_tasks": [
     "1. Today dashboard",
     "2. Recurring schedule",
     "3. Activity model",
     "4. Activity completion",
     "5. Calendar/history",
+    "6. Add activity",
     "Database schema v2 (nullable fields + foreign-key declarations)",
     "Schedule seeding (PRD §5 university classes)",
     "Idempotent weekly activity generation",
@@ -15,7 +17,8 @@
     "Shared activities feature (domain + repository + providers)",
     "Dashboard rewired onto shared Activity model",
     "Inline done/skip/reset actions with auto-refresh",
-    "Calendar month grid + per-day history with completion actions"
+    "Calendar month grid + per-day history with completion actions",
+    "Quick-add activity form (title/category/date/start/end/notes)"
   ],
   "validation_retries": 0,
   "fix_retries": 0,
@@ -24,7 +27,8 @@
   "last_validation_result": "PASS",
   "global_retry_count": 0,
   "consecutive_failures": 0,
-  "timestamp": "2026-09-07 23:50:00",
+  "timestamp": "2026-09-08 00:10:00",
+  "next_action": "Close Sprint 1: orchestration review gate over the six increments, final report, then start next approved roadmap item.",
   "stop_reason": "",
   "human_decision_required": false
 }

@@ -7,22 +7,6 @@ import '../activities/domain/activity.dart';
 import '../activities/domain/activity_status.dart';
 import '../dashboard/dashboard_providers.dart';
 
-/// Activity count per day-of-month for a given [month].
-final activitiesForMonthProvider =
-    FutureProvider.family<Map<int, int>, DateTime>((ref, month) async {
-      final start = DateTime(month.year, month.month, 1);
-      final end = DateTime(month.year, month.month + 1, 1);
-      final activities = await ref
-          .read(activityRepositoryProvider)
-          .getForRange(start, end);
-      final counts = <int, int>{};
-      for (final activity in activities) {
-        final day = activity.startTime.day;
-        counts[day] = (counts[day] ?? 0) + 1;
-      }
-      return counts;
-    });
-
 /// A day in the calendar grid that is independently selectable.
 class _DayCell {
   final DateTime date;
