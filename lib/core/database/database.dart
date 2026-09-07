@@ -195,6 +195,19 @@ class AppDatabase extends _$AppDatabase {
     ),
   );
 
+  // --- Study sessions -----------------------------------------------------
+  Future<List<StudySession>> getAllStudySessions() => (select(
+    studySessions,
+  )..orderBy([(t) => OrderingTerm.desc(t.startTime)])).get();
+  Future<StudySession?> getStudySessionById(String id) =>
+      (select(studySessions)..where((t) => t.id.equals(id))).getSingleOrNull();
+  Future<void> insertStudySession(StudySession session) =>
+      into(studySessions).insert(session);
+  Future<void> updateStudySession(String id, StudySessionsCompanion values) =>
+      (studySessions.update()..where((t) => t.id.equals(id))).write(values);
+  Future<void> deleteStudySession(String id) =>
+      (delete(studySessions)..where((t) => t.id.equals(id))).go();
+
   // --- Workout set logs ---------------------------------------------------
   Future<List<WorkoutSetLog>> getWorkoutSetLogs(String sessionId) =>
       (select(workoutSetLogs)

@@ -17,6 +17,8 @@ import 'package:daily_life/features/workout/workout_set_logging_screen.dart';
 import 'package:daily_life/features/workout/workout_history_screen.dart';
 import 'package:daily_life/features/workout/workout_screen.dart';
 import 'package:daily_life/features/study/study_screen.dart';
+import 'package:daily_life/features/study/add_study_session_screen.dart';
+import 'package:daily_life/features/study/study_session_detail_screen.dart';
 import 'package:daily_life/features/finance/finance_screen.dart';
 import 'package:daily_life/features/nutrition/nutrition_screen.dart';
 import 'package:daily_life/features/habits/habits_screen.dart';
@@ -101,7 +103,22 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
-      GoRoute(path: '/study', builder: (context, state) => const StudyScreen()),
+      GoRoute(
+        path: '/study',
+        builder: (context, state) => const StudyScreen(),
+        routes: [
+          GoRoute(
+            path: 'add',
+            builder: (context, state) => const AddStudySessionScreen(),
+          ),
+          GoRoute(
+            path: 'session/:sessionId',
+            builder: (context, state) => StudySessionDetailScreen(
+              sessionId: state.pathParameters['sessionId']!,
+            ),
+          ),
+        ],
+      ),
       GoRoute(
         path: '/finance',
         builder: (context, state) => const FinanceScreen(),

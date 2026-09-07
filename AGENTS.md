@@ -48,6 +48,14 @@ Before changing code, read the relevant project documentation. The primary sourc
 12. Prefer offline-first behavior for core personal data.
 13. Never silently expand or reduce product scope.
 
+## Context-Efficiency Rule
+
+- **AI_CONTEXT.md is the first project-context document to read**. It provides a concise operational snapshot; do not consume context by rereading all documentation by default.
+- **Detailed documents should be loaded selectively** based on the current task (PRD for requirements, ARCHITECTURE for design, DATABASE for schema, UI_UX for interactions).
+- **Source code and authoritative detailed documents take precedence over summaries when resolving conflicts**.
+- **Git history and `docs/PROGRESS.md` must be used to recover interrupted work**.
+- Do not implement unspecified product features or materially change roadmap/MVP scope without human approval.
+
 ## Autonomous Development Mode
 
 The agent is authorized to autonomously execute the approved roadmap and continue through approved tasks without waiting for user input after every task.

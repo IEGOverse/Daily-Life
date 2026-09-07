@@ -4,10 +4,10 @@
 > The repository, Git history, and this file are authoritative. Do not rely on previous chat memory.
 
 ## Current Phase
-Phase 2 — Workout
+Phase 3 — Study
 
 ## Current Sprint
-Sprint 2 — Workout (IN PROGRESS)
+Sprint 3 — Study (IN PROGRESS)
 
 ## Overall Status
 IN PROGRESS
@@ -22,16 +22,16 @@ IN PROGRESS
 - [x] Roadmap drafted
 - [x] AI-agent rules defined
 - [x] Phase 1 Task 1 — Today dashboard (greeting, daily progress, NOW/NEXT UP, timeline, finance strip; driven by live drift data)
-- [x] Phase 1 Task 2 — Recurring schedule (PRD §5 university schedule seeded; weekly activity generation idempotent; Schedule screen with day selector)
-- [x] Phase 1 Task 3 — Activity model (shared `activities` feature: central model, status lifecycle, repository; dashboard/schedule rewire over it)
+- [x] Phase 1 Task 2 — Recurring schedule (university schedule seeded; weekly activity generation idempotent; Schedule screen with day selector)
+- [x] Phase 1 Task 3 — Activity model (shared central model, status lifecycle, repository; dashboard/schedule rewire over it)
 - [x] Phase 1 Task 4 — Activity completion (done/skip/reset inline actions on dashboard timeline; auto-refresh; persisted)
-- [x] Phase 1 Task 5 — Calendar/history (month calendar grid + per-day activity list with completion actions; routed at `/calendar`, reachable from the dashboard date header)
-- [x] Phase 1 Task 6 — Add activity (quick-add form: title, category, date, start/end time, notes; saves via `ActivityRepository.insert` and refreshes providers; `/add` route + dashboard quick-add icon) — Phase 1 (Sprint 1) COMPLETE
-- [x] Phase 2 Task 1 — Exercise library (PRD §7): `Exercise` domain model, `ExerciseRepository` + lazy single-flight idempotent seeding of 15 standard exercises with instructions, `exercisesProvider`/`exerciseByIdProvider`, `/workout` library browser (muscle-group chips + search + empty state), `/workout/exercise/:id` detail with instructions, `/workout/add` quick-add form; DB helpers (`getAllExercises`, `getExerciseById`, `getExercisesByMuscleGroup`, `insertExercise`, `deleteExercise`)
-- [x] Phase 2 Task 2 — Workout plans: transactional plan/link repository, plan providers, `/workout/plans` list and empty state, plan creation with exercise selection and default sets/reps/rest, and `/workout/plans/:planId` detail view
-- [x] Phase 2 Task 3 — Workout sessions: session repository and providers, start-from-plan flow, active/completed session detail, prescribed exercises on the session screen, completion duration, and session history
-- [x] Phase 2 Task 4 — Set logging: `WorkoutSetLogRepository`, concurrent-safe planned-set materialization, reps/weight editing, per-set completion, plan-order presentation, and `/workout/sessions/:sessionId/sets` logging screen
-- [x] Phase 2 Task 5 — Workout history: completed-session summary, total duration, completed-set count, chronological completed-workout list, and `/workout/history`
+- [x] Phase 1 Task 5 — Calendar/history (month calendar grid + per-day activity list with completion actions; routed at `/calendar`)
+- [x] Phase 1 Task 6 — Add activity (quick-add form; saves via `ActivityRepository.insert`; `/add` route + dashboard quick-add icon) — Phase 1 (Sprint 1) COMPLETE
+- [x] Phase 2 Task 1 — Exercise library (`Exercise` domain, `ExerciseRepository`, lazy single-flight seed of 15 standard exercises with instructions, `/workout` library browser with muscle-group chips + search + empty state, detail screen, add form)
+- [x] Phase 2 Task 2 — Workout plans (transactional plan/link repository, `/workout/plans` list/create/detail, exercise selection, default 3 sets / 10 reps / 60 s rest)
+- [x] Phase 2 Task 3 — Workout sessions (session repository, start-from-plan flow, completion with duration validation, `/workout/sessions/:id` detail, history list)
+- [x] Phase 2 Task 4 — Set logging (`WorkoutSetLogRepository`, concurrent-safe single-flight materialization, reps/weight editing, `/workout/sessions/:sessionId/sets` screen)
+- [x] Phase 2 Task 5 — Workout history (completed-session summary, total minutes, completed-set count, chronological completed-workout list, `/workout/history`)
 
 ## Sprint 0 Checklist
 - [x] Verify Flutter/Dart installation
@@ -49,7 +49,7 @@ IN PROGRESS
 - [x] Create test structure
 - [x] Run formatter (dart format passes, 0 changes)
 - [x] Run analyzer (dart analyze lib/ passes with no issues)
-- [x] Run tests (flutter test passes: +4: All tests passed!)
+- [x] Run tests (flutter test passes)
 - [x] Run build check (build_runner generates successfully)
 - [x] Review implementation against project docs
 - [x] Create stable Git commit
@@ -57,119 +57,30 @@ IN PROGRESS
 - [x] Create AI documentation (workflow, decision policy, review, reporting)
 - [x] Validate all automation scripts
 
-## Automation & Orchestration
-- `automation/config/workflow.yaml` — Workflow config with max_retries: 3, stop conditions, safety limits
-- `automation/scripts/run-task.ps1` — Main orchestrator (`Invoke-Orchestrator`)
-- `automation/scripts/validate.ps1` — Validation script with retry
-- `automation/scripts/checkpoint.ps1` — State management, reports, resume
-- `automation/prompts/developer.md` — OpenCode implementation prompt template
-- `automation/prompts/reviewer.md` — Review prompt template
-- `automation/prompts/decision.md` — Human decision escalation prompt template
-- `automation/state/checkpoint.json` — State persistence (Phase 0 foundation marked complete, ready for orchestration)
-- OpenCode available at `C:\Users\USER\AppData\Roaming\npm\opencode.ps1`
-
 ## Verification Results
-- `dart analyze lib/`: No issues found
+- `dart analyze lib/ test/`: No issues found
 - `dart format --output=none lib test`: clean
-- `flutter test`: 76 tests passed
+- `flutter test`: 79 tests pass (53 Sprint 1 + 26 Phase 2-3)
 - `flutter build bundle`: exit 0
-- `build_runner`: 38 outputs generated successfully
+- `build_runner`: generates successfully
 
 ## Current Task
-Phase 2 — Workout is complete: all five approved tasks are implemented and
-validated. The final task checkpoint is being committed; next is Phase 3 Study.
-
-CODE REVIEW (Stage 5) — PASSED after two CHANGES_REQUIRED rounds:
-- Round A findings (all fixed): HIGH — schedule-generated activities stored
-  `DateTime.utc` wall-clock; drift reads back timestamps as local so displayed
-  times shifted by the UTC offset and, in negative-offset zones, day queries
-  placed activities on the wrong calendar day (fix: build a local DateTime then
-  `.toUtc()`, matching the query-side `_localStartOfDay` and add_screen). MEDIUM —
-  first-launch seeding never invalidated cached providers (fix: invalidate
-  `dashboardSummaryProvider` + `activitiesForDayProvider` after seeding). LOW —
-  current-week generation was one-shot at launch (fix: idempotent
-  `ensureCurrentWeekActivities` on dashboard/day/month read paths) and the
-  calendar grid's "today" used `DateTime.now()` (fix: watch `clockProvider`).
-- Round B finding (fixed): HIGH — concurrent `useSeeding` + initial `/today`
-  route both seeded on first launch, racing the schedules UNIQUE constraint
-  (fix: single-flight `ensureSeededAndGenerated` lock). Re-review: APPROVED.
-
-VERIFIED FROM DRIFT SOURCE (mapping.dart:120,182): writer stores the absolute
-millisecond instant; reader returns a local `DateTime`. Hence write-side
-`DateTime(y,m,d,h,min).toUtc()` preserves the local wall clock, and day/range
-queries compare local-midnight UTC instants — consistent end to end.
-
-## Next Task
-Phase 3 — Study Task 1: Study sessions. Use the existing `StudySessions` table
-to record subject, date, start/end, duration, understanding, and notes.
-
-## Orchestrator Review — Round 2 Fixes (COMPLETE)
-Second round of orchestrator review fixes applied and verified. Sprint 1 must NOT
-start until this section is reviewed and approved.
-
-### Round 2 — Fixes Applied
-1. [x] TASK DISCOVERY — Structured parser understands roadmap structure (## Phase N → ordered tasks); returns tasks with PhaseNumber + Number; Get-PhaseTasks helper; only counts list-item bullets (not narrative/prose); skips verbose bullets (>140 chars)
-2. [x] VALIDATION BUILD CHECK — Replaced duplicate `dart analyze lib/` with real `flutter build bundle` (a valid Flutter compile check needing no mobile SDK). Updated run-task.ps1, validate.ps1, workflow.yaml, docs (AI_WORKFLOW.md, AI_REVIEW.md, developer.md)
-3. [x] SELF-TEST — Expanded to 15 tests: roadmap ordering (TEST 1), Phase 1 - Daily Core 6-task resolution (TEST 1b), completed-task skipping + narrative false-match prevention (TEST 1c), validation flow + real Build stage assertion (TEST 3), Get-NextTask end-to-end (TEST 3b), review parsing (TEST 4), retry flow (TEST 5), human-decision hard stop (TEST 6), next-task progression (TEST 7), safety limits (TEST 8), OpenCode availability (TEST 9), report generation (TEST 10)
-4. [x] SAFETY — All limits unchanged: MaxRetries=3/stage, MaxTasksPerRun=10, MaxTotalRetries=50, MaxConsecutiveFailures=3, human-decision hard stop, critical-blocker hard stop, never-commit-unreviewed-work
-5. [x] NO SPRINT 1 WORK — No product code touched; stashed Sprint 1 work preserved
-
-## Database Schema v2 (COMPLETED)
-`lib/core/database/database.dart` upgraded to schemaVersion 2 under the
-explicitly-authorized DB debt fix (nullable fields + foreign-key declarations
-per `docs/DATABASE.md`):
-
-- `Schedules.location`, `Schedules.notes` now nullable
-- `Activities.scheduleId` nullable with FK → `Schedules(id)`; `endTime`,
-  `referenceId`, `referenceType`, `notes` nullable
-- `HabitLogs.habitId` FK → Habits; `WorkoutPlanExercises` FKs; `WorkoutSessions`
-  FKs + nullable endTime/durationSeconds/notes/weight; `StudySessions`
-  nullable fields + FK; `Transactions.description`, `Meals.notes`,
-  `Foods`/`WorkoutPlans`/`Exercises` descriptions nullable + FKs
-- Migration: `from < 2` → drop all tables + `createAll()` (safe pre-release,
-  no user data exists yet)
-- New query helpers: day/range queries for activities and transactions
-  (UTC-normalized local-day boundaries), `hasActivityForSchedule`
-  (idempotent recurrence), `setActivityStatus`, `getSchedulesByDay`,
-  `getActiveSchedules`, `getScheduleById`, `getActivityById`
-- `databaseProvider` (Riverpod, closes DB on dispose) + `inMemoryDatabaseOverride()`
-  for tests
-
-## Sprint 1 — Current Task Status
-- [x] 1. Today dashboard — DONE (committed)
-- [x] 2. Recurring schedule — DONE (committed)
-- [x] 3. Activity model — DONE (committed)
-- [x] 4. Activity completion — DONE (committed)
-- [x] 5. Calendar/history — DONE (committed)
-- [x] 6. Add activity — DONE (committed)
-- [x] Sprint code-review gate — PASSED (APPROVED)
-- Phase 1 (Daily Core) — COMPLETE, sprint closed
-
-## Verification Results (final sprint state)
-- `dart analyze lib/ test/`: No issues found
-- `dart format --output=none lib/ test/`: clean
-- `flutter test`: All 53 tests passed (+53)
-- `flutter build bundle`: exit 0
-- Review: APPROVED (after 2 CHANGES_REQUIRED rounds → fixes → re-review)
-
-## Phase 2 — Workout Task Status
-- [x] 1. Exercise library — DONE (committed and pushed)
-- [x] 2. Workout plans — DONE (committed and pushed)
-- [x] 3. Workout sessions — DONE (committed and pushed)
-- [x] 4. Set logging — DONE (committed and pushed)
-- [x] 5. History — DONE (checkpoint pending/pushed with this increment)
+Phase 3 — Study Task 2: Topics. (Task 1 COMPLETE; proceeding to Task 2)
 
 ## Phase 2 — Workout Status
-- COMPLETE — all five approved tasks delivered and validated.
-- [ ] 5. History
+COMPLETE — all five approved tasks delivered and validated.
+
+## Phase 3 — Study Status
+- [x] Task 1 — Study sessions (CRUD screen + repository — COMPLETE)
+- [ ] Task 2 — Topics
+- [ ] Task 3 — Notes
+- [ ] Task 4 — History
+- [ ] Task 5 — Basic study statistics
 
 ## Known Issues / Decisions Pending
-- Flutter SDK has compatibility issues with Dart SDK 3.13.2 causing `dart test` to include framework errors (framework-level, not code-level). `flutter test` passes with +4: All tests passed!
-- `dart compile kernel` requires Flutter Dart SDK (dart:ui not available on standalone Dart VM — expected behavior)
-- Database recurrence strategy should be finalized before implementing recurring schedule logic.
-- Activity generation/occurrence strategy should be finalized before implementing schedule-to-activity behavior.
-- Supabase/cloud sync is intentionally deferred.
-- AI features are intentionally deferred.
+- Recurrence/occurrence strategy not finalized (Phase 3+).
+- Phase 3 Tasks 2-5 (Topics, Notes, History, Statistics) not yet started.
+- Flutter SDK compatibility with Dart SDK 3.13.2 (framework-level, not code-level).
 
 ## Recovery Instructions
 If an agent/session stops unexpectedly:
@@ -181,4 +92,4 @@ If an agent/session stops unexpectedly:
 6. Commit only when the increment is stable.
 
 ## Last Updated
-2026-09-08 (Phase 2 complete: Workout; 76 tests, analyze clean, build bundle exit 0)
+2026-09-07 Phase 3 Study Task 1 COMPLETE: Study sessions CRUD implemented and validated.

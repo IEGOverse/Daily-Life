@@ -28,8 +28,9 @@ void main() {
     });
 
     test('covers every muscle group', () {
-      final groups =
-          ExerciseLibrarySeeder.initialExercises().map((e) => e.muscleGroup).toSet();
+      final groups = ExerciseLibrarySeeder.initialExercises()
+          .map((e) => e.muscleGroup)
+          .toSet();
       expect(groups, containsAll(exerciseMuscleGroups));
     });
   });
@@ -56,15 +57,18 @@ void main() {
       expect(await database.getAllExercises(), hasLength(15));
     });
 
-    test('concurrent calls share one in-flight seed and never conflict', () async {
-      final results = await Future.wait([
-        ensureExerciseLibrarySeeded(database),
-        ensureExerciseLibrarySeeded(database),
-        ensureExerciseLibrarySeeded(database),
-      ]);
-      expect(results, hasLength(3));
-      expect(await database.getAllExercises(), hasLength(15));
-    });
+    test(
+      'concurrent calls share one in-flight seed and never conflict',
+      () async {
+        final results = await Future.wait([
+          ensureExerciseLibrarySeeded(database),
+          ensureExerciseLibrarySeeded(database),
+          ensureExerciseLibrarySeeded(database),
+        ]);
+        expect(results, hasLength(3));
+        expect(await database.getAllExercises(), hasLength(15));
+      },
+    );
   });
 
   group('ExerciseRepository', () {
@@ -276,7 +280,10 @@ void main() {
       addTearDown(database.close);
 
       await tester.pumpWidget(
-        UncontrolledProviderScope(container: container, child: const DailyLifeApp()),
+        UncontrolledProviderScope(
+          container: container,
+          child: const DailyLifeApp(),
+        ),
       );
       await tester.pumpAndSettle();
 
