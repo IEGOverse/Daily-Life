@@ -74,7 +74,7 @@ COMPLETE — all five approved tasks delivered and validated.
 - [x] Task 1 — Study sessions (CRUD screen + repository — COMPLETE)
 - [x] Task 2 — Topics
 - [x] Task 3 — Notes
-- [ ] Task 4 — History
+- [x] Task 4 — History
 - [ ] Task 5 — Basic study statistics
 
 ## Known Issues / Decisions Pending

@@ -16,10 +16,10 @@
 **Completed Milestones**:
 - Sprint 1 (Phase 1 — Daily Core): 6/6 tasks APPROVED after 2 CHANGES_REQUIRED rounds. 53 tests pass, `flutter build bundle` exit 0.
 - Sprint 2 (Phase 2 — Workout): 5/5 tasks completed and pushed. Exercise library, workout plans, sessions, set logging, history all delivered.
-- Sprint 3 (Phase 3 — Study): Task 1 — Study sessions CRUD implemented. Repository supports insert, update, delete via `StudySession` entity. Task 2 — Topics implemented. Repository supports `getAll`, `byId`, `insert`, `update`, `delete` via Drift entity constructors. Task 3 — Notes implemented. Notes field added to StudySession model and CRUD via StudySessionRepository. Task 4 — History in progress.
+- Sprint 3 (Phase 3 — Study): Task 1 — Study sessions CRUD implemented. Repository supports insert, update, delete via `StudySession` entity. Task 2 — Topics implemented. Repository supports `getAll`, `byId`, `insert`, `update`, `delete` via Drift entity constructors. Task 3 — Notes implemented. Notes field added to StudySession model and CRUD via StudySessionRepository. Task 4 — History implemented. Study history screen with filtering and chronological list.
 - Database schema v2: nullable fields + FKs per `docs/DATABASE.md`; UTC-normalized local-day boundaries.
 
-**Current Task**: Phase 3 — Study Task 4: History; Task 5: Basic study statistics.
+**Current Task**: Phase 3 — Study Task 5: Basic study statistics.
 
 **Important Architectural Decisions**:
 - Write-side builds local `DateTime` then `.toUtc()` to preserve wall-clock (Drift reader returns local).
