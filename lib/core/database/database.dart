@@ -208,6 +208,17 @@ class AppDatabase extends _$AppDatabase {
   Future<void> deleteStudySession(String id) =>
       (delete(studySessions)..where((t) => t.id.equals(id))).go();
 
+  // --- Study topics -----------------------------------------------------
+  Future<List<StudyTopic>> getAllStudyTopics() => (select(studyTopics)).get();
+  Future<StudyTopic?> getStudyTopicById(String id) =>
+      (select(studyTopics)..where((t) => t.id.equals(id))).getSingleOrNull();
+  Future<void> insertStudyTopic(StudyTopic topic) =>
+      into(studyTopics).insert(topic);
+  Future<void> updateStudyTopic(String id, StudyTopicsCompanion values) =>
+      (studyTopics.update()..where((t) => t.id.equals(id))).write(values);
+  Future<void> deleteStudyTopic(String id) =>
+      (delete(studyTopics)..where((t) => t.id.equals(id))).go();
+
   // --- Workout set logs ---------------------------------------------------
   Future<List<WorkoutSetLog>> getWorkoutSetLogs(String sessionId) =>
       (select(workoutSetLogs)

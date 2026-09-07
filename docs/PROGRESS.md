@@ -72,14 +72,14 @@ COMPLETE — all five approved tasks delivered and validated.
 
 ## Phase 3 — Study Status
 - [x] Task 1 — Study sessions (CRUD screen + repository — COMPLETE)
-- [ ] Task 2 — Topics
-- [ ] Task 3 — Notes
+- [x] Task 2 — Topics
+- [x] Task 3 — Notes
 - [ ] Task 4 — History
 - [ ] Task 5 — Basic study statistics
 
 ## Known Issues / Decisions Pending
 - Recurrence/occurrence strategy not finalized (Phase 3+).
-- Phase 3 Tasks 2-5 (Topics, Notes, History, Statistics) not yet started.
+- Phase 3 Tasks 3-5 (Notes, History, Statistics) not yet started.
 - Flutter SDK compatibility with Dart SDK 3.13.2 (framework-level, not code-level).
 
 ## Recovery Instructions

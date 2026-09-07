@@ -16,10 +16,10 @@
 **Completed Milestones**:
 - Sprint 1 (Phase 1 — Daily Core): 6/6 tasks APPROVED after 2 CHANGES_REQUIRED rounds. 53 tests pass, `flutter build bundle` exit 0.
 - Sprint 2 (Phase 2 — Workout): 5/5 tasks completed and pushed. Exercise library, workout plans, sessions, set logging, history all delivered.
-- Sprint 3 (Phase 3 — Study): Task 1 — Study sessions CRUD implemented. Repository supports insert, update, delete via `StudySession` entity. All 79 tests pass, `flutter build bundle` exit 0.
+- Sprint 3 (Phase 3 — Study): Task 1 — Study sessions CRUD implemented. Repository supports insert, update, delete via `StudySession` entity. Task 2 — Topics implemented. Repository supports `getAll`, `byId`, `insert`, `update`, `delete` via Drift entity constructors. Task 3 — Notes implemented. Notes field added to StudySession model and CRUD via StudySessionRepository. Task 4 — History in progress.
 - Database schema v2: nullable fields + FKs per `docs/DATABASE.md`; UTC-normalized local-day boundaries.
 
-**Current Task**: Phase 3 — Study Task 2: Topics; Task 3: Notes; Task 4: History; Task 5: Basic study statistics.
+**Current Task**: Phase 3 — Study Task 4: History; Task 5: Basic study statistics.
 
 **Important Architectural Decisions**:
 - Write-side builds local `DateTime` then `.toUtc()` to preserve wall-clock (Drift reader returns local).
@@ -34,7 +34,7 @@
 - AI features intentionally deferred.
 - Flutter/Dart SDK compatibility note: `flutter test` passes with +4 framework errors (not code-level).
 
-**Latest Checkpoint**: Commit `1023120 feat(workout): add workout history` (Phase 2 complete), plus Study Sessions CRUD implementation.
+**Latest Checkpoint**: Commit `1023120 feat(workout): add workout history` (Phase 2 complete), plus Study Sessions CRUD and Topics implementation.
 
 **Validation Status**:
 - `dart analyze lib/ test/`: No issues found
@@ -45,7 +45,7 @@
 **Known Blockers / Debt**:
 - Study session CRUD verified with end-to-end tests (79 tests pass).
 - Recurrence/occurrence strategy not finalized (Phase 3+).
-- Phase 3 Tasks 2-5 (Topics, Notes, History, Statistics) not yet started.
+- Phase 3 Tasks 3-5 (Notes, History, Statistics) not yet started.
 
 **Instructions for Resuming Work**:
 1. Read `docs/AI_CONTEXT.md` first.

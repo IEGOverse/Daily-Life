@@ -95,9 +95,8 @@ class _AddStudySessionScreenState extends ConsumerState<AddStudySessionScreen> {
         : ref.watch(studySessionByIdProvider(widget.sessionId!));
     if (existing != null) {
       return existing.when(
-        loading: () => const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        ),
+        loading: () =>
+            const Scaffold(body: Center(child: CircularProgressIndicator())),
         error: (error, stack) => const Scaffold(
           body: Center(child: Text('Failed to load study session.')),
         ),
