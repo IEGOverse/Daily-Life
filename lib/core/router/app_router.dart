@@ -13,6 +13,7 @@ import 'package:daily_life/features/workout/workout_plan_detail_screen.dart';
 import 'package:daily_life/features/workout/workout_plans_screen.dart';
 import 'package:daily_life/features/workout/workout_session_detail_screen.dart';
 import 'package:daily_life/features/workout/workout_sessions_screen.dart';
+import 'package:daily_life/features/workout/workout_set_logging_screen.dart';
 import 'package:daily_life/features/workout/workout_screen.dart';
 import 'package:daily_life/features/study/study_screen.dart';
 import 'package:daily_life/features/finance/finance_screen.dart';
@@ -82,6 +83,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 builder: (context, state) => WorkoutSessionDetailScreen(
                   sessionId: state.pathParameters['sessionId']!,
                 ),
+                routes: [
+                  GoRoute(
+                    path: 'sets',
+                    builder: (context, state) => WorkoutSetLoggingScreen(
+                      sessionId: state.pathParameters['sessionId']!,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

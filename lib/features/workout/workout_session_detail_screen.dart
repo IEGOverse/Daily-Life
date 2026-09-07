@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'workout_providers.dart';
 
@@ -75,6 +76,13 @@ class WorkoutSessionDetailScreen extends ConsumerWidget {
               ),
               if (!value.completed) ...[
                 const SizedBox(height: 24),
+                OutlinedButton.icon(
+                  onPressed: () =>
+                      context.push('/workout/sessions/${value.id}/sets'),
+                  icon: const Icon(Icons.edit_note),
+                  label: const Text('Log sets'),
+                ),
+                const SizedBox(height: 8),
                 FilledButton.icon(
                   onPressed: () async {
                     await ref

@@ -4,9 +4,11 @@ import '../../core/database/database_provider.dart';
 import 'data/exercise_repository.dart';
 import 'data/workout_plan_repository.dart';
 import 'data/workout_session_repository.dart';
+import 'data/workout_set_log_repository.dart';
 import 'domain/exercise.dart';
 import 'domain/workout_plan.dart';
 import 'domain/workout_session.dart';
+import 'domain/workout_set_log.dart';
 
 final exerciseRepositoryProvider = Provider<ExerciseRepository>(
   (ref) => ExerciseRepository(ref.watch(databaseProvider)),
@@ -56,4 +58,15 @@ final workoutSessionsProvider = FutureProvider<List<WorkoutSession>>((ref) {
 final workoutSessionByIdProvider =
     FutureProvider.family<WorkoutSession?, String>((ref, id) {
       return ref.watch(workoutSessionRepositoryProvider).byId(id);
+    });
+
+final workoutSetLogRepositoryProvider = Provider<WorkoutSetLogRepository>(
+  (ref) => WorkoutSetLogRepository(ref.watch(databaseProvider)),
+);
+
+final workoutSetLogsProvider =
+    FutureProvider.family<List<WorkoutSetLog>, String>((ref, sessionId) {
+      return ref
+          .watch(workoutSetLogRepositoryProvider)
+          .ensureForSession(sessionId);
     });

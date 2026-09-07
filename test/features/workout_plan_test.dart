@@ -9,7 +9,9 @@ import 'package:daily_life/features/dashboard/dashboard_providers.dart';
 import 'package:daily_life/features/workout/data/exercise_repository.dart';
 import 'package:daily_life/features/workout/data/workout_plan_repository.dart';
 import 'package:daily_life/features/workout/data/workout_session_repository.dart';
+import 'package:daily_life/features/workout/data/workout_set_log_repository.dart';
 import 'package:daily_life/features/workout/domain/workout_plan.dart';
+import 'package:daily_life/features/workout/domain/workout_set_log.dart';
 import 'package:daily_life/main.dart';
 
 void main() {
@@ -51,7 +53,8 @@ void main() {
     });
 
     test('deletes a plan and its links', () async {
-      final exercise = (await ExerciseRepository(database).getAll()).first;
+      final exercises = await ExerciseRepository(database).getAll();
+      final exercise = exercises.first;
       await repository.insert(
         plan: const WorkoutPlan(id: 'plan_delete', name: 'Temporary'),
         exercises: [WorkoutPlanDraftExercise(exercise: exercise)],
@@ -63,7 +66,8 @@ void main() {
     });
 
     test('retains plans that have session history', () async {
-      final exercise = (await ExerciseRepository(database).getAll()).first;
+      final exercises = await ExerciseRepository(database).getAll();
+      final exercise = exercises.first;
       await repository.insert(
         plan: const WorkoutPlan(id: 'plan_retained', name: 'Retained'),
         exercises: [WorkoutPlanDraftExercise(exercise: exercise)],
@@ -136,6 +140,16 @@ void main() {
       await tester.tap(find.text('Start workout'));
       await tester.pumpAndSettle();
       expect(find.text('In progress'), findsOneWidget);
+      await tester.tap(find.text('Log sets'));
+      await tester.pumpAndSettle();
+      expect(find.text('Save set logs'), findsOneWidget);
+      await tester.tap(find.byType(Checkbox).first);
+      await tester.tap(find.text('Save set logs'));
+      await tester.pumpAndSettle();
+      final sessionId = (await database.getAllWorkoutSessions()).single.id;
+      expect((await database.getWorkoutSetLogs(sessionId)).first.completed, 1);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Complete workout'));
       await tester.pumpAndSettle();
       expect(find.text('Completed'), findsOneWidget);
@@ -200,7 +214,8 @@ void main() {
       addTearDown(database.close);
       await ensureExerciseLibrarySeeded(database);
       final plans = WorkoutPlanRepository(database);
-      final exercise = (await ExerciseRepository(database).getAll()).first;
+      final exercises = await ExerciseRepository(database).getAll();
+      final exercise = exercises.first;
       await plans.insert(
         plan: const WorkoutPlan(id: 'plan_invalid_time', name: 'Timing'),
         exercises: [WorkoutPlanDraftExercise(exercise: exercise)],
@@ -219,6 +234,49 @@ void main() {
         throwsA(isA<ArgumentError>()),
       );
       expect((await repository.byId(session.id))?.completed, isFalse);
+    });
+
+    test('materializes prescribed sets and updates actual logging', () async {
+      final database = db.AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      await ensureExerciseLibrarySeeded(database);
+      final plans = WorkoutPlanRepository(database);
+      final exercises = await ExerciseRepository(database).getAll();
+      final exercise = exercises.first;
+      await plans.insert(
+        plan: const WorkoutPlan(id: 'plan_sets', name: 'Set plan'),
+        exercises: [
+          WorkoutPlanDraftExercise(exercise: exercise, sets: 3, reps: 8),
+          WorkoutPlanDraftExercise(exercise: exercises[1], sets: 1, reps: 5),
+        ],
+      );
+      final session = await WorkoutSessionRepository(database)
+          .start(workoutPlanId: 'plan_sets', now: DateTime(2026, 9, 8, 8));
+      final repository = WorkoutSetLogRepository(database);
+      final results = await Future.wait([
+        repository.ensureForSession(session.id),
+        repository.ensureForSession(session.id),
+      ]);
+      final logs = results.first;
+      expect(logs, hasLength(4));
+      expect(logs.first.reps, 8);
+
+      await repository.update(
+        WorkoutSetLog(
+          id: logs.first.id,
+          workoutSessionId: session.id,
+          exerciseId: logs.first.exerciseId,
+          setNumber: logs.first.setNumber,
+          reps: 7,
+          weight: 42.5,
+          completed: true,
+        ),
+      );
+      final updated = (await repository.forSession(session.id)).first;
+      expect(updated.reps, 7);
+      expect(updated.weight, 42.5);
+      expect(updated.completed, isTrue);
+      expect(await repository.ensureForSession(session.id), hasLength(4));
     });
   });
 }

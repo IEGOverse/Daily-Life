@@ -195,6 +195,30 @@ class AppDatabase extends _$AppDatabase {
     ),
   );
 
+  // --- Workout set logs ---------------------------------------------------
+  Future<List<WorkoutSetLog>> getWorkoutSetLogs(String sessionId) =>
+      (select(workoutSetLogs)
+            ..where((t) => t.workoutSessionId.equals(sessionId))
+            ..orderBy([
+              (t) => OrderingTerm.asc(t.exerciseId),
+              (t) => OrderingTerm.asc(t.setNumber),
+            ]))
+          .get();
+  Future<void> insertWorkoutSetLog(WorkoutSetLog log) =>
+      into(workoutSetLogs).insert(log);
+  Future<void> updateWorkoutSetLog(
+    String id,
+    int reps,
+    double? weight,
+    bool completed,
+  ) => (workoutSetLogs.update()..where((t) => t.id.equals(id))).write(
+    WorkoutSetLogsCompanion(
+      reps: Value(reps),
+      weight: Value(weight),
+      completed: Value(completed ? 1 : 0),
+    ),
+  );
+
   // --- Transactions -------------------------------------------------------
   Future<List<Transaction>> getTransactionsForDay(DateTime day) async {
     final start = _localStartOfDay(day);
