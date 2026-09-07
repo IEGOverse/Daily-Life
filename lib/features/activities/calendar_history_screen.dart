@@ -179,7 +179,7 @@ class _MonthHeader extends StatelessWidget {
 }
 
 /// A 7-column monthly grid with weekday headers and selectable day cells.
-class _CalendarGrid extends StatelessWidget {
+class _CalendarGrid extends ConsumerWidget {
   final DateTime month;
   final DateTime selectedDay;
   final Map<int, int> counts;
@@ -193,10 +193,10 @@ class _CalendarGrid extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final firstWeekday = DateTime(month.year, month.month, 1).weekday; // 1=Mon
     final daysInMonth = DateTime(month.year, month.month + 1, 0).day;
-    final today = DateTime.now();
+    final today = ref.watch(clockProvider);
 
     final leadingBlanks = firstWeekday - 1;
     final totalCells = ((leadingBlanks + daysInMonth + 6) ~/ 7) * 7;

@@ -186,10 +186,83 @@ Future<List<db.Activity>> generateActivitiesForDay(
 }
 
 /// Merges a local calendar [day] with a "HH:MM" [time] string and converts
-/// the result to UTC for drift storage.
+/// the result to the UTC instant drift stores timestamps as. Drift reads
+/// timestamps back as local DateTimes, so the local wall-clock time must be
+/// preserved as the instant, exactly like `_localStartOfDay` does on the query
+/// side: build a local DateTime, then take its UTC instant.
 DateTime _combineDayAndTime(DateTime day, String time) {
   final parts = time.split(':');
   final hour = int.parse(parts[0]);
   final minute = int.parse(parts[1]);
-  return DateTime.utc(day.year, day.month, day.day, hour, minute);
+  return DateTime(day.year, day.month, day.day, hour, minute).toUtc();
 }
+
+/// Seeds the initial university schedule (PRD §5) once, then generates
+/// activities for each day in the week containing [now].
+///
+/// Idempotent: schedules are only inserted when the table is empty and
+/// activities are only created when [db.AppDatabase.hasActivityForSchedule]
+/// reports none for a schedule/day.
+///
+/// Concurrent callers share a single in-flight operation so the
+/// check-then-insert seed and generation phases can't race (on first launch
+/// and at each week rollover both the top-level seeding future and the initial
+/// dashboard route run this; a shared lock keeps them from double-inserting
+/// and hitting the tables' UNIQUE constraints).
+Future<void> ensureSeededAndGenerated(
+  db.AppDatabase database, {
+  DateTime? now,
+}) {
+  final inFlight = _seedInFlight;
+  if (inFlight != null) {
+    return inFlight;
+  }
+  final reference = now ?? DateTime.now();
+  final future = _seedAndGenerate(database, reference).whenComplete(() {
+    _seedInFlight = null;
+  });
+  _seedInFlight = future;
+  return future;
+}
+
+Future<void>? _seedInFlight;
+
+Future<void> _seedAndGenerate(
+  db.AppDatabase database,
+  DateTime reference,
+) async {
+  final existing = await database.getActiveSchedules();
+  if (existing.isEmpty) {
+    for (final schedule in ScheduleSeeder.initialSchedules()) {
+      await database.insertSchedule(schedule);
+    }
+  }
+
+  final monday = _startOfWeek(reference);
+  for (var i = 0; i < 7; i++) {
+    final day = DateTime(monday.year, monday.month, monday.day + i);
+    await generateActivitiesForDay(database, day);
+  }
+}
+
+/// Ensures recurring activities exist for [day] when [day] falls in the week
+/// containing [now]. Weeks before/after the current one are left untouched so
+/// history isn't retroactively populated; they are materialized when they
+/// become current (on a fresh launch, dashboard/calendar load, etc.).
+Future<void> ensureCurrentWeekActivities(
+  db.AppDatabase database,
+  DateTime now,
+  DateTime day,
+) async {
+  if (_sameDate(_startOfWeek(day), _startOfWeek(now))) {
+    await ensureSeededAndGenerated(database, now: now);
+  }
+}
+
+DateTime _startOfWeek(DateTime d) {
+  final monday = d.subtract(Duration(days: d.weekday - 1));
+  return DateTime(monday.year, monday.month, monday.day);
+}
+
+bool _sameDate(DateTime a, DateTime b) =>
+    a.year == b.year && a.month == b.month && a.day == b.day;

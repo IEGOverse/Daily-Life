@@ -71,27 +71,34 @@ IN PROGRESS
 - `build_runner`: 38 outputs generated successfully
 
 ## Current Task
-Sprint 1 in progress. Phase 1 (Daily Core) is functionally complete; closing out
-the sprint with documentation, the orchestration review gate, and a final
-checkpoint.
+Sprint 1 — Phase 1 (Daily Core) is COMPLETE and closed. Six increments committed
+and pushed, sprint code-review gate passed.
 
-DONE (Sixth increment): Task 6 — Add activity.
-`AddActivityScreen` at `/add` is a minimal form (title, category dropdown,
-date + start time pickers, optional end time via a switch, optional notes).
-Save validates, builds an `Activity` with a timestamp-based id, persists via
-`ActivityRepository.insert`, then invalidates the dashboard summary and the
-activity day/month providers so today + calendar refresh automatically.
-Reachable from a new quick-add icon on the dashboard date header (PRD §4: record
-in as few actions as possible). Widget tests drive the full flow through the
-real router + in-memory DB (quick-add lands on today and persists; validation
-blocks empty titles without persisting).
+CODE REVIEW (Stage 5) — PASSED after two CHANGES_REQUIRED rounds:
+- Round A findings (all fixed): HIGH — schedule-generated activities stored
+  `DateTime.utc` wall-clock; drift reads back timestamps as local so displayed
+  times shifted by the UTC offset and, in negative-offset zones, day queries
+  placed activities on the wrong calendar day (fix: build a local DateTime then
+  `.toUtc()`, matching the query-side `_localStartOfDay` and add_screen). MEDIUM —
+  first-launch seeding never invalidated cached providers (fix: invalidate
+  `dashboardSummaryProvider` + `activitiesForDayProvider` after seeding). LOW —
+  current-week generation was one-shot at launch (fix: idempotent
+  `ensureCurrentWeekActivities` on dashboard/day/month read paths) and the
+  calendar grid's "today" used `DateTime.now()` (fix: watch `clockProvider`).
+- Round B finding (fixed): HIGH — concurrent `useSeeding` + initial `/today`
+  route both seeded on first launch, racing the schedules UNIQUE constraint
+  (fix: single-flight `ensureSeededAndGenerated` lock). Re-review: APPROVED.
+
+VERIFIED FROM DRIFT SOURCE (mapping.dart:120,182): writer stores the absolute
+millisecond instant; reader returns a local `DateTime`. Hence write-side
+`DateTime(y,m,d,h,min).toUtc()` preserves the local wall clock, and day/range
+queries compare local-midnight UTC instants — consistent end to end.
 
 ## Next Task
-Sprint 1 wrap-up. Run the full orchestration validation/review gate
-(`docs/AI_REVIEW.md`) over the six committed increments, close out the sprint
-checkpoint, and start Phase 2 (or the next approved roadmap item). Phase 2
-will add specialized modules (workout/study/finance/nutrition/habits) wired to
-the Activity entity via `referenceId`/`referenceType`.
+Phase 2 — Workout (approved roadmap): Exercise library, Workout plans, Workout
+sessions, Set logging, History. Begin with Task 1 (Exercise library) reusing the
+approved Activity entity (`referenceId`/`referenceType`) and the
+exercise/workout tables already defined in the schema.
 
 ## Orchestrator Review — Round 2 Fixes (COMPLETE)
 Second round of orchestrator review fixes applied and verified. Sprint 1 must NOT
@@ -132,13 +139,15 @@ per `docs/DATABASE.md`):
 - [x] 4. Activity completion — DONE (committed)
 - [x] 5. Calendar/history — DONE (committed)
 - [x] 6. Add activity — DONE (committed)
-- Phase 1 (Daily Core) — COMPLETE; sprint closing in progress
+- [x] Sprint code-review gate — PASSED (APPROVED)
+- Phase 1 (Daily Core) — COMPLETE, sprint closed
 
-## Verification Results (Task 6 increment)
+## Verification Results (final sprint state)
 - `dart analyze lib/ test/`: No issues found
 - `dart format --output=none lib/ test/`: clean
-- `flutter test`: All 50 tests passed (+50)
+- `flutter test`: All 53 tests passed (+53)
 - `flutter build bundle`: exit 0
+- Review: APPROVED (after 2 CHANGES_REQUIRED rounds → fixes → re-review)
 
 ## Known Issues / Decisions Pending
 - Flutter SDK has compatibility issues with Dart SDK 3.13.2 causing `dart test` to include framework errors (framework-level, not code-level). `flutter test` passes with +4: All tests passed!
@@ -158,4 +167,4 @@ If an agent/session stops unexpectedly:
 6. Commit only when the increment is stable.
 
 ## Last Updated
-2026-09-07 (Sprint 1 increment — Task 6 Add activity committed; analyze clean, tests 50/50, build bundle exit 0; Phase 1 Daily Core complete)
+2026-09-08 (Sprint 1 closed: Phase 1 Daily Core complete; review APPROVED; analyze clean, tests 53/53, build bundle exit 0)

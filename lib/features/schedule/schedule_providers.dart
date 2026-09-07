@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/database/database.dart' as db;
 import '../../core/database/database_provider.dart';
+import '../activities/activity_providers.dart';
+import '../dashboard/dashboard_providers.dart';
 import 'data/schedule_repository.dart';
 
 /// Day of the week shown on the schedule screen (1 = Monday … 7 = Sunday).
@@ -15,28 +17,16 @@ final schedulesForDayProvider = FutureProvider<List<db.Schedule>>((ref) async {
   return database.getSchedulesByDay(dayOfWeek);
 });
 
-/// Seeds the initial university schedule (PRD §5) once, then generates
-/// activities for each day in the current week.
-Future<void> ensureSeededAndGenerated(db.AppDatabase database) async {
-  final existing = await database.getActiveSchedules();
-  if (existing.isEmpty) {
-    for (final schedule in ScheduleSeeder.initialSchedules()) {
-      await database.insertSchedule(schedule);
-    }
-  }
-
-  final now = DateTime.now();
-  final monday = now.subtract(Duration(days: now.weekday - 1));
-  for (var i = 0; i < 7; i++) {
-    final day = DateTime(monday.year, monday.month, monday.day + i);
-    await generateActivitiesForDay(database, day);
-  }
-}
-
-/// One-shot future that seeds + generates. Completes on first read.
+/// One-shot future that seeds + generates for the current week. Completes on
+/// first read.
 final _seedAndGenerateFutureProvider = FutureProvider<void>((ref) async {
   final database = ref.read(databaseProvider);
-  await ensureSeededAndGenerated(database);
+  final now = ref.read(clockProvider);
+  await ensureSeededAndGenerated(database, now: now);
+  // Seeding may have inserted activities below cached providers; refresh them
+  // so the dashboard and today list aren't empty until a manual reload.
+  ref.invalidate(dashboardSummaryProvider);
+  ref.invalidate(activitiesForDayProvider);
 });
 
 /// Watches the seeding future. Safe to call from a widget's build method:

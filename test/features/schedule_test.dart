@@ -5,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:daily_life/core/database/database.dart' as db;
 import 'package:daily_life/core/database/database_provider.dart';
 import 'package:daily_life/features/schedule/data/schedule_repository.dart';
-import 'package:daily_life/features/schedule/schedule_providers.dart';
 import 'package:daily_life/features/schedule/schedule_screen.dart';
 
 void main() {
@@ -111,6 +110,48 @@ void main() {
       );
       expect(generated, isEmpty);
     });
+
+    test(
+      'class times keep the local wall clock and land on the right day',
+      () async {
+        for (final schedule in ScheduleSeeder.initialSchedules()) {
+          if (schedule.dayOfWeek == 1) {
+            await database.insertSchedule(schedule);
+          }
+        }
+
+        final generated = await generateActivitiesForDay(
+          database,
+          DateTime(2026, 9, 7), // Monday
+        );
+        expect(generated, hasLength(3));
+
+        // Drift reads timestamps back as local DateTimes; assert through the
+        // repository's read path so the stored instant round-trips to the same
+        // local wall clock and stays on the intended day.
+        final mondayActivities = await database.getActivitiesForDay(
+          DateTime(2026, 9, 7),
+        );
+        expect(mondayActivities, hasLength(3));
+        final bpr = mondayActivities.firstWhere(
+          (a) => a.title == 'Business Process Reengineering',
+        );
+        expect(bpr.startTime.hour, 10);
+        expect(bpr.startTime.minute, 10);
+        expect(
+          bpr.startTime.millisecondsSinceEpoch,
+          DateTime(2026, 9, 7, 10, 10).millisecondsSinceEpoch,
+        );
+        expect(bpr.endTime!.hour, 11);
+        expect(bpr.endTime!.minute, 30);
+
+        // Nothing on the adjacent day.
+        expect(
+          await database.getActivitiesForDay(DateTime(2026, 9, 8)),
+          isEmpty,
+        );
+      },
+    );
   });
 
   group('ensureSeededAndGenerated', () {
@@ -139,6 +180,72 @@ void main() {
         totalActivities += activities.length;
       }
       expect(totalActivities, 15);
+    });
+
+    test(
+      'concurrent calls share one in-flight seed and never conflict',
+      () async {
+        // Simulates first launch: useSeeding and the initial dashboard route
+        // both trigger ensureSeededAndGenerated on the same frame. Both must
+        // complete without UNIQUE-constraint failures.
+        final results = await Future.wait([
+          ensureSeededAndGenerated(database),
+          ensureSeededAndGenerated(database),
+          ensureSeededAndGenerated(database),
+        ]);
+        expect(results, hasLength(3));
+
+        expect(await database.getActiveSchedules(), hasLength(15));
+        final now = DateTime.now();
+        final monday = now.subtract(Duration(days: now.weekday - 1));
+        var totalActivities = 0;
+        for (var i = 0; i < 7; i++) {
+          final day = DateTime(monday.year, monday.month, monday.day + i);
+          final activities = await database.getActivitiesForDay(day);
+          totalActivities += activities.length;
+        }
+        expect(totalActivities, 15);
+      },
+    );
+  });
+
+  group('ensureCurrentWeekActivities', () {
+    late db.AppDatabase database;
+
+    setUp(() async {
+      database = db.AppDatabase(NativeDatabase.memory());
+    });
+
+    tearDown(() async {
+      await database.close();
+    });
+
+    test('materializes the current week only and is idempotent', () async {
+      final now = DateTime(2026, 9, 9); // Wednesday
+
+      // A day in a future week is left alone.
+      await ensureCurrentWeekActivities(database, now, DateTime(2026, 9, 26));
+      expect(
+        await database.getActivitiesForDay(DateTime(2026, 9, 26)),
+        isEmpty,
+      );
+      // Schedules are not seeded either for the non-current week.
+      expect(await database.getActiveSchedules(), isEmpty);
+
+      // The current week gets generated (seeds too).
+      await ensureCurrentWeekActivities(database, now, DateTime(2026, 9, 9));
+      expect(await database.getActiveSchedules(), hasLength(15));
+      expect(
+        await database.getActivitiesForDay(DateTime(2026, 9, 8)), // Tuesday
+        isNotEmpty,
+      );
+
+      // Idempotent: running again adds nothing new.
+      await ensureCurrentWeekActivities(database, now, DateTime(2026, 9, 9));
+      expect(
+        await database.getActivitiesForDay(DateTime(2026, 9, 8)),
+        hasLength(3),
+      );
     });
   });
 

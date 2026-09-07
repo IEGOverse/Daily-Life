@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/database/database_provider.dart';
+import '../schedule/data/schedule_repository.dart';
 import 'data/dashboard_repository.dart';
 import 'domain/dashboard_summary.dart';
 
@@ -16,7 +17,9 @@ final dashboardRepositoryProvider = Provider<DashboardRepository>((ref) {
 ///
 /// Override in tests with a fixed summary, or invalidate it to force a reload.
 final dashboardSummaryProvider = FutureProvider<DashboardSummary>((ref) async {
-  final repository = ref.watch(dashboardRepositoryProvider);
-  final now = ref.watch(clockProvider);
-  return repository.buildSummaryForDay(now);
+  final now = ref.read(clockProvider);
+  // Materialize the recurring week (idempotent) so "today" always reflects
+  // the approved schedule, even on a week boundary.
+  await ensureCurrentWeekActivities(ref.read(databaseProvider), now, now);
+  return ref.read(dashboardRepositoryProvider).buildSummaryForDay(now);
 });

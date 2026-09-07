@@ -302,8 +302,8 @@ void main() {
           id: 'a1',
           title: 'Math',
           category: 'study',
-          startTime: DateTime(2026, 9, 8, 9),
-          endTime: DateTime(2026, 9, 8, 10),
+          startTime: DateTime(2026, 9, 6, 9),
+          endTime: DateTime(2026, 9, 6, 10),
           status: 'scheduled',
           scheduleId: null,
           notes: null,
@@ -315,7 +315,9 @@ void main() {
         ProviderScope(
           overrides: [
             databaseProvider.overrideWithValue(database),
-            clockProvider.overrideWithValue(DateTime(2026, 9, 8, 9, 30)),
+            // Sunday the 6th: the recurring week-generation adds no classes,
+            // so this day contains exactly the inserted activity.
+            clockProvider.overrideWithValue(DateTime(2026, 9, 6, 9, 30)),
           ],
           child: const MaterialApp(home: DashboardScreen()),
         ),

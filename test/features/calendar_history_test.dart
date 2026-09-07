@@ -31,6 +31,11 @@ void main() {
       // The calendar grid is present (number 8 cell representing today).
       expect(find.text('8'), findsWidgets);
 
+      // Today (Tuesday 8th) has its generated classes; select Sunday the 13th,
+      // which has none, to exercise the empty state.
+      await tester.tap(find.text('13'));
+      await tester.pumpAndSettle();
+
       // The selected day's activity list is below the grid; scroll to it.
       await tester.scrollUntilVisible(
         find.text('No activities for this day.'),
@@ -46,14 +51,15 @@ void main() {
       final database = db.AppDatabase(NativeDatabase.memory());
       addTearDown(database.close);
 
-      // Activity on 2026-09-08 with an actionable status.
+      // Activity on Saturday 2026-09-26 (outside the generated current week)
+      // so the day list contains exactly this one activity.
       await database.insertActivity(
         db.Activity(
           id: 'a1',
           title: 'Data Mining',
           category: 'study',
-          startTime: DateTime(2026, 9, 8, 13, 10),
-          endTime: DateTime(2026, 9, 8, 14, 30),
+          startTime: DateTime(2026, 9, 26, 13, 10),
+          endTime: DateTime(2026, 9, 26, 14, 30),
           status: 'scheduled',
           scheduleId: null,
           notes: null,
@@ -72,10 +78,16 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // The activity sits below the month grid; drag the outer list up so the
-      // day section is visible.
-      await tester.drag(find.byType(ListView), const Offset(0, -600));
+      // Pick that Saturday on the grid.
+      await tester.tap(find.text('26'));
       await tester.pumpAndSettle();
+
+      // The activity sits below the month grid; scroll until visible.
+      await tester.scrollUntilVisible(
+        find.text('Data Mining'),
+        100,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(find.text('Data Mining'), findsOneWidget);
 
       // Tap Done.

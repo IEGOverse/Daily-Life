@@ -1,8 +1,9 @@
 {
   "current_sprint": "Sprint 1 - Phase 1: Daily Core",
-  "current_task": "6. Add activity",
+  "current_task": "Sprint 1 closure",
   "task_status": "COMPLETED",
   "phase_1_complete": true,
+  "sprint_1_closed": true,
   "completed_tasks": [
     "1. Today dashboard",
     "2. Recurring schedule",
@@ -18,17 +19,18 @@
     "Dashboard rewired onto shared Activity model",
     "Inline done/skip/reset actions with auto-refresh",
     "Calendar month grid + per-day history with completion actions",
-    "Quick-add activity form (title/category/date/start/end/notes)"
+    "Quick-add activity form (title/category/date/start/end/notes)",
+    "Review fixes: schedule timezone/instant conversion, seed single-flight lock, post-seed invalidation, lazy current-week materialization, clockProvider-based calendar today"
   ],
   "validation_retries": 0,
   "fix_retries": 0,
-  "review_retries": 0,
-  "last_review_decision": "",
+  "review_retries": 2,
+  "last_review_decision": "APPROVED",
   "last_validation_result": "PASS",
   "global_retry_count": 0,
   "consecutive_failures": 0,
-  "timestamp": "2026-09-08 00:10:00",
-  "next_action": "Close Sprint 1: orchestration review gate over the six increments, final report, then start next approved roadmap item.",
+  "timestamp": "2026-09-08 00:45:00",
+  "next_action": "Phase 2 - Workout: Task 1 Exercise library.",
   "stop_reason": "",
   "human_decision_required": false
 }
