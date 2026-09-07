@@ -97,7 +97,15 @@ class ActivityCard extends StatelessWidget {
               ],
             ),
           ),
-          Text(status, style: Theme.of(context).textTheme.bodySmall),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(time, style: Theme.of(context).textTheme.bodySmall),
+              const SizedBox(height: 2),
+              Text(status, style: Theme.of(context).textTheme.labelSmall),
+            ],
+          ),
         ],
       ),
     );

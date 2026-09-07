@@ -4,10 +4,10 @@
 > The repository, Git history, and this file are authoritative. Do not rely on previous chat memory.
 
 ## Current Phase
-Phase 0 — Foundation
+Phase 1 — Daily Core
 
 ## Current Sprint
-Sprint 0 — Project Initialization (COMPLETED)
+Sprint 1 — Daily Core (IN PROGRESS)
 
 ## Overall Status
 IN PROGRESS
@@ -21,6 +21,7 @@ IN PROGRESS
 - [x] UI/UX direction drafted
 - [x] Roadmap drafted
 - [x] AI-agent rules defined
+- [x] Phase 1 Task 1 — Today dashboard (greeting, daily progress, NOW/NEXT UP, timeline, finance strip; driven by live drift data)
 
 ## Sprint 0 Checklist
 - [x] Verify Flutter/Dart installation
@@ -65,10 +66,24 @@ IN PROGRESS
 - `build_runner`: 38 outputs generated successfully
 
 ## Current Task
-Sprint 0 complete. Orchestrator foundation review round 2 fixes COMPLETE — self-test passes (15/15), validation passes (4/4 including real `flutter build bundle`). Awaiting final review before Sprint 1.
+Sprint 1 in progress.
+
+DONE (First increment, committed): Task 1 — Today dashboard. The dashboard
+(`lib/features/dashboard/`) now renders live data via drift: greeting +
+calendar header, daily progress card (completed/total + progress bar),
+NOW card, NEXT UP card, "Today's Timeline" (ordered ActivityCards),
+and a Finance strip (balance/income/spent from the day's transactions).
+Loading/empty/error/refresh states are handled. Backed by `clockProvider`
+(overridable in tests) and `dashboardSummaryProvider` (FutureProvider).
+New files: `data/dashboard_repository.dart`, `domain/dashboard_summary.dart`,
+`domain/today_activity.dart`, `dashboard_providers.dart`,
+`core/database/database_provider.dart`.
 
 ## Next Task
-Sprint 1: Implement Dashboard/Today screen logic with actual data from drift database.
+Task 2 — Recurring schedule: seed the PRD §5 initial university schedule;
+generate today's activities from weekly schedules (idempotent via
+`hasActivityForSchedule`); build the Schedule screen to view the week.
+Requires reading the rest of PRD §5 and finalizing the recurrence strategy.
 
 ## Orchestrator Review — Round 2 Fixes (COMPLETE)
 Second round of orchestrator review fixes applied and verified. Sprint 1 must NOT
@@ -80,6 +95,41 @@ start until this section is reviewed and approved.
 3. [x] SELF-TEST — Expanded to 15 tests: roadmap ordering (TEST 1), Phase 1 - Daily Core 6-task resolution (TEST 1b), completed-task skipping + narrative false-match prevention (TEST 1c), validation flow + real Build stage assertion (TEST 3), Get-NextTask end-to-end (TEST 3b), review parsing (TEST 4), retry flow (TEST 5), human-decision hard stop (TEST 6), next-task progression (TEST 7), safety limits (TEST 8), OpenCode availability (TEST 9), report generation (TEST 10)
 4. [x] SAFETY — All limits unchanged: MaxRetries=3/stage, MaxTasksPerRun=10, MaxTotalRetries=50, MaxConsecutiveFailures=3, human-decision hard stop, critical-blocker hard stop, never-commit-unreviewed-work
 5. [x] NO SPRINT 1 WORK — No product code touched; stashed Sprint 1 work preserved
+
+## Database Schema v2 (COMPLETED)
+`lib/core/database/database.dart` upgraded to schemaVersion 2 under the
+explicitly-authorized DB debt fix (nullable fields + foreign-key declarations
+per `docs/DATABASE.md`):
+
+- `Schedules.location`, `Schedules.notes` now nullable
+- `Activities.scheduleId` nullable with FK → `Schedules(id)`; `endTime`,
+  `referenceId`, `referenceType`, `notes` nullable
+- `HabitLogs.habitId` FK → Habits; `WorkoutPlanExercises` FKs; `WorkoutSessions`
+  FKs + nullable endTime/durationSeconds/notes/weight; `StudySessions`
+  nullable fields + FK; `Transactions.description`, `Meals.notes`,
+  `Foods`/`WorkoutPlans`/`Exercises` descriptions nullable + FKs
+- Migration: `from < 2` → drop all tables + `createAll()` (safe pre-release,
+  no user data exists yet)
+- New query helpers: day/range queries for activities and transactions
+  (UTC-normalized local-day boundaries), `hasActivityForSchedule`
+  (idempotent recurrence), `setActivityStatus`, `getSchedulesByDay`,
+  `getActiveSchedules`, `getScheduleById`, `getActivityById`
+- `databaseProvider` (Riverpod, closes DB on dispose) + `inMemoryDatabaseOverride()`
+  for tests
+
+## Sprint 1 — Current Task Status
+- [x] 1. Today dashboard — DONE (committed)
+- [ ] 2. Recurring schedule
+- [ ] 3. Activity model
+- [ ] 4. Activity completion
+- [ ] 5. Calendar/history
+- [ ] 6. Add activity
+
+## Verification Results (Task 1 increment)
+- `dart analyze lib/ test/`: No issues found
+- `dart format --output=none lib/ test/`: clean
+- `flutter test`: All 23 tests passed (+23)
+- `flutter build bundle`: exit 0, `build/flutter_assets` present
 
 ## Known Issues / Decisions Pending
 - Flutter SDK has compatibility issues with Dart SDK 3.13.2 causing `dart test` to include framework errors (framework-level, not code-level). `flutter test` passes with +4: All tests passed!
@@ -99,4 +149,4 @@ If an agent/session stops unexpectedly:
 6. Commit only when the increment is stable.
 
 ## Last Updated
-2026-09-07 (Orchestrator review round 2 fixes — self-test 15/15, validation 4/4 with flutter build bundle, awaiting final review)
+2026-09-07 (Sprint 1 increment — Task 1 Today dashboard committed; analyze clean, tests 23/23, build bundle exit 0)

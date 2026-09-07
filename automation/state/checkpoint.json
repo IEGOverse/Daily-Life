@@ -1,17 +1,12 @@
 {
-  "current_sprint": "Sprint 0 - Project Initialization",
-  "current_task": "",
+  "current_sprint": "Sprint 1 - Phase 1: Daily Core",
+  "current_task": "1. Today dashboard",
   "task_status": "COMPLETED",
   "completed_tasks": [
-    "Sprint 0 - Project Initialization",
-    "Flutter project",
-    "Git/GitHub",
-    "Folder architecture",
-    "Theme",
-    "Routing",
-    "Riverpod",
-    "SQLite foundation",
-    "Testing foundation"
+    "1. Today dashboard",
+    "Database schema v2 (nullable fields + foreign-key declarations)",
+    "Dashboard data access (repository + domain + providers)",
+    "Dashboard tests (schema, queries, domain, widget)"
   ],
   "validation_retries": 0,
   "fix_retries": 0,
@@ -20,7 +15,7 @@
   "last_validation_result": "PASS",
   "global_retry_count": 0,
   "consecutive_failures": 0,
-  "timestamp": "2026-09-07 17:36:00",
-  "stop_reason": "NO_MORE_TASKS (Sprint 0 complete, Phase 0 foundation done)",
+  "timestamp": "2026-09-07 21:00:00",
+  "stop_reason": "",
   "human_decision_required": false
 }

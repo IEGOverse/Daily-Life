@@ -23,10 +23,11 @@ part 'database.g.dart';
   ],
 )
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(driftDatabase(name: 'daily_life'));
+  AppDatabase([QueryExecutor? executor])
+    : super(executor ?? driftDatabase(name: 'daily_life'));
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -34,15 +35,25 @@ class AppDatabase extends _$AppDatabase {
       await m.createAll();
     },
     onUpgrade: (Migrator m, int from, int to) async {
-      if (from < 1) {
+      if (from < 2) {
+        // v1 was a pre-release development schema. v2 fixes nullability and
+        // adds foreign-key declarations. Recreating is safe pre-release.
+        for (final table in allTables) {
+          await m.deleteTable(table.actualTableName);
+        }
         await m.createAll();
       }
     },
   );
 
+  // --- Schedules ----------------------------------------------------------
   Future<List<Schedule>> getAllSchedules() => select(schedules).get();
   Future<List<Schedule>> getSchedulesByDay(int dayOfWeek) =>
       (select(schedules)..where((t) => t.dayOfWeek.equals(dayOfWeek))).get();
+  Future<List<Schedule>> getActiveSchedules() =>
+      (select(schedules)..where((t) => t.isActive.equals(1))).get();
+  Future<Schedule?> getScheduleById(String id) =>
+      (select(schedules)..where((t) => t.id.equals(id))).getSingleOrNull();
   Future<void> insertSchedule(Schedule schedule) =>
       into(schedules).insert(schedule);
   Future<void> updateSchedule(String id, Schedule schedule) =>
@@ -50,15 +61,109 @@ class AppDatabase extends _$AppDatabase {
   Future<void> deleteSchedule(String id) =>
       (delete(schedules)..where((t) => t.id.equals(id))).go();
 
+  // --- Activities ---------------------------------------------------------
   Future<List<Activity>> getAllActivities() => select(activities).get();
   Future<List<Activity>> getActivitiesByStatus(String status) =>
       (select(activities)..where((t) => t.status.equals(status))).get();
+  Future<Activity?> getActivityById(String id) =>
+      (select(activities)..where((t) => t.id.equals(id))).getSingleOrNull();
   Future<void> insertActivity(Activity activity) =>
       into(activities).insert(activity);
   Future<void> updateActivity(String id, Activity activity) =>
       (activities.update()..where((t) => t.id.equals(id))).write(activity);
   Future<void> deleteActivity(String id) =>
       (delete(activities)..where((t) => t.id.equals(id))).go();
+
+  /// Whether an activity already exists for [scheduleId] starting at
+  /// [start]. Used to keep recurrent activity generation idempotent across
+  /// restarts.
+  Future<bool> hasActivityForSchedule(String scheduleId, DateTime start) async {
+    final matches =
+        await (select(activities)..where(
+              (t) =>
+                  t.scheduleId.equals(scheduleId) & t.startTime.equals(start),
+            ))
+            .get();
+    return matches.isNotEmpty;
+  }
+
+  /// Returns activities whose start time falls within the local day [day].
+  ///
+  /// Drift stores date times normalized to UTC. These queries therefore build
+  /// their boundaries from the local start/end of the requested day, converted
+  /// to UTC, so matching is correct regardless of the device time zone.
+  Future<List<Activity>> getActivitiesForDay(DateTime day) async {
+    final start = _localStartOfDay(day);
+    final end = _localStartOfDay(day.add(const Duration(days: 1)));
+    return (select(activities)
+          ..where(
+            (t) =>
+                t.startTime.isBiggerOrEqualValue(start) &
+                t.startTime.isSmallerThanValue(end),
+          )
+          ..orderBy([(t) => OrderingTerm.asc(t.startTime)]))
+        .get();
+  }
+
+  /// Returns activities with start time in [startInclusive, endExclusive),
+  /// ordered by start time. Boundaries are interpreted as local and converted
+  /// to UTC for storage comparison.
+  Future<List<Activity>> getActivitiesForRange(
+    DateTime startInclusive,
+    DateTime endExclusive,
+  ) {
+    return (select(activities)
+          ..where(
+            (t) =>
+                t.startTime.isBiggerOrEqualValue(startInclusive.toUtc()) &
+                t.startTime.isSmallerThanValue(endExclusive.toUtc()),
+          )
+          ..orderBy([(t) => OrderingTerm.asc(t.startTime)]))
+        .get();
+  }
+
+  Future<List<Activity>> getActivitiesForSchedule(String scheduleId) =>
+      (select(activities)..where((t) => t.scheduleId.equals(scheduleId))).get();
+
+  Future<void> setActivityStatus(String id, String status) async {
+    await (activities.update()..where((t) => t.id.equals(id))).write(
+      ActivitiesCompanion(status: Value(status)),
+    );
+  }
+
+  // --- Transactions -------------------------------------------------------
+  Future<List<Transaction>> getTransactionsForDay(DateTime day) async {
+    final start = _localStartOfDay(day);
+    final end = _localStartOfDay(day.add(const Duration(days: 1)));
+    return (select(transactions)
+          ..where(
+            (t) =>
+                t.date.isBiggerOrEqualValue(start) &
+                t.date.isSmallerThanValue(end),
+          )
+          ..orderBy([(t) => OrderingTerm.desc(t.date)]))
+        .get();
+  }
+
+  Future<List<Transaction>> getTransactionsForRange(
+    DateTime startInclusive,
+    DateTime endExclusive,
+  ) {
+    return (select(transactions)
+          ..where(
+            (t) =>
+                t.date.isBiggerOrEqualValue(startInclusive.toUtc()) &
+                t.date.isSmallerThanValue(endExclusive.toUtc()),
+          )
+          ..orderBy([(t) => OrderingTerm.desc(t.date)]))
+        .get();
+  }
+
+  Future<void> insertTransaction(Transaction transaction) =>
+      into(transactions).insert(transaction);
+
+  DateTime _localStartOfDay(DateTime day) =>
+      DateTime(day.year, day.month, day.day).toUtc();
 }
 
 class Schedules extends Table {
@@ -69,8 +174,8 @@ class Schedules extends Table {
   TextColumn get startTime => text()();
   TextColumn get endTime => text()();
   TextColumn get repeatType => text()();
-  TextColumn get location => text()();
-  TextColumn get notes => text()();
+  TextColumn get location => text().nullable()();
+  TextColumn get notes => text().nullable()();
   IntColumn get isActive => integer().withDefault(Constant(1))();
   DateTimeColumn get createdAt => dateTime()();
 
@@ -80,15 +185,15 @@ class Schedules extends Table {
 
 class Activities extends Table {
   TextColumn get id => text()();
-  TextColumn get scheduleId => text()();
+  TextColumn get scheduleId => text().nullable().references(Schedules, #id)();
   TextColumn get title => text()();
   TextColumn get category => text()();
   DateTimeColumn get startTime => dateTime()();
-  DateTimeColumn get endTime => dateTime()();
+  DateTimeColumn get endTime => dateTime().nullable()();
   TextColumn get status => text()();
-  TextColumn get referenceId => text()();
-  TextColumn get referenceType => text()();
-  TextColumn get notes => text()();
+  TextColumn get referenceId => text().nullable()();
+  TextColumn get referenceType => text().nullable()();
+  TextColumn get notes => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
 
   @override
@@ -109,7 +214,7 @@ class Habits extends Table {
 
 class HabitLogs extends Table {
   TextColumn get id => text()();
-  TextColumn get habitId => text()();
+  TextColumn get habitId => text().references(Habits, #id)();
   DateTimeColumn get date => dateTime()();
   IntColumn get completed => integer().withDefault(Constant(0))();
 
@@ -121,8 +226,8 @@ class Exercises extends Table {
   TextColumn get id => text()();
   TextColumn get name => text()();
   TextColumn get muscleGroup => text()();
-  TextColumn get description => text()();
-  TextColumn get instructions => text()();
+  TextColumn get description => text().nullable()();
+  TextColumn get instructions => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -131,8 +236,8 @@ class Exercises extends Table {
 class WorkoutPlans extends Table {
   TextColumn get id => text()();
   TextColumn get name => text()();
-  TextColumn get description => text()();
-  TextColumn get dayLabel => text()();
+  TextColumn get description => text().nullable()();
+  TextColumn get dayLabel => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -140,11 +245,11 @@ class WorkoutPlans extends Table {
 
 class WorkoutPlanExercises extends Table {
   TextColumn get id => text()();
-  TextColumn get workoutPlanId => text()();
-  TextColumn get exerciseId => text()();
+  TextColumn get workoutPlanId => text().references(WorkoutPlans, #id)();
+  TextColumn get exerciseId => text().references(Exercises, #id)();
   IntColumn get sets => integer()();
   IntColumn get reps => integer()();
-  IntColumn get restSeconds => integer()();
+  IntColumn get restSeconds => integer().nullable()();
   IntColumn get sortOrder => integer()();
 
   @override
@@ -153,13 +258,13 @@ class WorkoutPlanExercises extends Table {
 
 class WorkoutSessions extends Table {
   TextColumn get id => text()();
-  TextColumn get workoutPlanId => text()();
+  TextColumn get workoutPlanId => text().references(WorkoutPlans, #id)();
   DateTimeColumn get date => dateTime()();
   DateTimeColumn get startTime => dateTime()();
-  DateTimeColumn get endTime => dateTime()();
-  IntColumn get durationSeconds => integer()();
+  DateTimeColumn get endTime => dateTime().nullable()();
+  IntColumn get durationSeconds => integer().nullable()();
   IntColumn get completed => integer().withDefault(Constant(0))();
-  TextColumn get notes => text()();
+  TextColumn get notes => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -167,11 +272,11 @@ class WorkoutSessions extends Table {
 
 class WorkoutSetLogs extends Table {
   TextColumn get id => text()();
-  TextColumn get workoutSessionId => text()();
-  TextColumn get exerciseId => text()();
+  TextColumn get workoutSessionId => text().references(WorkoutSessions, #id)();
+  TextColumn get exerciseId => text().references(Exercises, #id)();
   IntColumn get setNumber => integer()();
   IntColumn get reps => integer()();
-  RealColumn get weight => real()();
+  RealColumn get weight => real().nullable()();
   IntColumn get completed => integer().withDefault(Constant(0))();
 
   @override
@@ -183,10 +288,10 @@ class StudySessions extends Table {
   TextColumn get subject => text()();
   DateTimeColumn get date => dateTime()();
   DateTimeColumn get startTime => dateTime()();
-  DateTimeColumn get endTime => dateTime()();
-  IntColumn get durationSeconds => integer()();
-  IntColumn get understanding => integer()();
-  TextColumn get notes => text()();
+  DateTimeColumn get endTime => dateTime().nullable()();
+  IntColumn get durationSeconds => integer().nullable()();
+  IntColumn get understanding => integer().nullable()();
+  TextColumn get notes => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -194,7 +299,7 @@ class StudySessions extends Table {
 
 class StudyTopics extends Table {
   TextColumn get id => text()();
-  TextColumn get studySessionId => text()();
+  TextColumn get studySessionId => text().references(StudySessions, #id)();
   TextColumn get topic => text()();
 
   @override
@@ -206,7 +311,7 @@ class Transactions extends Table {
   TextColumn get type => text()();
   TextColumn get category => text()();
   IntColumn get amount => integer()();
-  TextColumn get description => text()();
+  TextColumn get description => text().nullable()();
   DateTimeColumn get date => dateTime()();
   DateTimeColumn get createdAt => dateTime()();
 
@@ -233,7 +338,7 @@ class Meals extends Table {
   TextColumn get mealType => text()();
   DateTimeColumn get date => dateTime()();
   DateTimeColumn get time => dateTime()();
-  TextColumn get notes => text()();
+  TextColumn get notes => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -241,8 +346,8 @@ class Meals extends Table {
 
 class MealFoods extends Table {
   TextColumn get id => text()();
-  TextColumn get mealId => text()();
-  TextColumn get foodId => text()();
+  TextColumn get mealId => text().references(Meals, #id)();
+  TextColumn get foodId => text().references(Foods, #id)();
   RealColumn get quantity => real()();
   TextColumn get unit => text()();
 
