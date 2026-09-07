@@ -11,6 +11,8 @@ import 'package:daily_life/features/workout/workout_exercise_detail_screen.dart'
 import 'package:daily_life/features/workout/add_workout_plan_screen.dart';
 import 'package:daily_life/features/workout/workout_plan_detail_screen.dart';
 import 'package:daily_life/features/workout/workout_plans_screen.dart';
+import 'package:daily_life/features/workout/workout_session_detail_screen.dart';
+import 'package:daily_life/features/workout/workout_sessions_screen.dart';
 import 'package:daily_life/features/workout/workout_screen.dart';
 import 'package:daily_life/features/study/study_screen.dart';
 import 'package:daily_life/features/finance/finance_screen.dart';
@@ -67,6 +69,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 path: ':planId',
                 builder: (context, state) => WorkoutPlanDetailScreen(
                   planId: state.pathParameters['planId']!,
+                ),
+              ),
+            ],
+          ),
+          GoRoute(
+            path: 'sessions',
+            builder: (context, state) => const WorkoutSessionsScreen(),
+            routes: [
+              GoRoute(
+                path: ':sessionId',
+                builder: (context, state) => WorkoutSessionDetailScreen(
+                  sessionId: state.pathParameters['sessionId']!,
                 ),
               ),
             ],

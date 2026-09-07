@@ -8,6 +8,7 @@ import 'package:daily_life/core/router/app_router.dart';
 import 'package:daily_life/features/dashboard/dashboard_providers.dart';
 import 'package:daily_life/features/workout/data/exercise_repository.dart';
 import 'package:daily_life/features/workout/data/workout_plan_repository.dart';
+import 'package:daily_life/features/workout/data/workout_session_repository.dart';
 import 'package:daily_life/features/workout/domain/workout_plan.dart';
 import 'package:daily_life/main.dart';
 
@@ -59,6 +60,25 @@ void main() {
 
       expect(await repository.byId('plan_delete'), isNull);
       expect(await database.getWorkoutPlanExercises('plan_delete'), isEmpty);
+    });
+
+    test('retains plans that have session history', () async {
+      final exercise = (await ExerciseRepository(database).getAll()).first;
+      await repository.insert(
+        plan: const WorkoutPlan(id: 'plan_retained', name: 'Retained'),
+        exercises: [WorkoutPlanDraftExercise(exercise: exercise)],
+      );
+      final sessions = WorkoutSessionRepository(database);
+      await sessions.start(
+        workoutPlanId: 'plan_retained',
+        now: DateTime(2026, 9, 8, 8),
+      );
+
+      expect(
+        () => repository.delete('plan_retained'),
+        throwsA(isA<StateError>()),
+      );
+      expect(await repository.byId('plan_retained'), isNotNull);
     });
   });
 
@@ -112,6 +132,13 @@ void main() {
       expect(find.text('Exercises'), findsOneWidget);
       expect(find.text('Bicep Curl'), findsOneWidget);
       expect(find.text('3 sets x 10 reps  •  60s rest'), findsOneWidget);
+
+      await tester.tap(find.text('Start workout'));
+      await tester.pumpAndSettle();
+      expect(find.text('In progress'), findsOneWidget);
+      await tester.tap(find.text('Complete workout'));
+      await tester.pumpAndSettle();
+      expect(find.text('Completed'), findsOneWidget);
     });
 
     testWidgets('requires a plan name and one exercise', (tester) async {
@@ -137,6 +164,61 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Enter a plan name.'), findsOneWidget);
       expect(await database.getAllWorkoutPlans(), isEmpty);
+    });
+  });
+
+  group('WorkoutSessionRepository', () {
+    test('starts and completes a session with its duration', () async {
+      final database = db.AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final planRepository = WorkoutPlanRepository(database);
+      await ensureExerciseLibrarySeeded(database);
+      final exercise = (await ExerciseRepository(database).getAll());
+      await planRepository.insert(
+        plan: const WorkoutPlan(id: 'plan_session', name: 'Session plan'),
+        exercises: [WorkoutPlanDraftExercise(exercise: exercise.first)],
+      );
+      final repository = WorkoutSessionRepository(database);
+      final started = await repository.start(
+        workoutPlanId: 'plan_session',
+        now: DateTime(2026, 9, 8, 8),
+      );
+      await repository.complete(
+        started.id,
+        endTime: DateTime(2026, 9, 8, 8, 1, 30),
+      );
+
+      final finished = await repository.byId(started.id);
+      expect(finished?.completed, isTrue);
+      expect(finished?.durationSeconds, 90);
+      expect(finished?.plan?.name, 'Session plan');
+      expect(await repository.getAll(), hasLength(1));
+    });
+
+    test('rejects an end time before the session start', () async {
+      final database = db.AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      await ensureExerciseLibrarySeeded(database);
+      final plans = WorkoutPlanRepository(database);
+      final exercise = (await ExerciseRepository(database).getAll()).first;
+      await plans.insert(
+        plan: const WorkoutPlan(id: 'plan_invalid_time', name: 'Timing'),
+        exercises: [WorkoutPlanDraftExercise(exercise: exercise)],
+      );
+      final repository = WorkoutSessionRepository(database);
+      final session = await repository.start(
+        workoutPlanId: 'plan_invalid_time',
+        now: DateTime(2026, 9, 8, 8),
+      );
+
+      expect(
+        () => repository.complete(
+          session.id,
+          endTime: DateTime(2026, 9, 8, 7, 59),
+        ),
+        throwsA(isA<ArgumentError>()),
+      );
+      expect((await repository.byId(session.id))?.completed, isFalse);
     });
   });
 }

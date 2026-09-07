@@ -11,7 +11,16 @@ class WorkoutPlansScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final plans = ref.watch(workoutPlansProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Workout plans')),
+      appBar: AppBar(
+        title: const Text('Workout plans'),
+        actions: [
+          IconButton(
+            tooltip: 'Session history',
+            icon: const Icon(Icons.history),
+            onPressed: () => context.push('/workout/sessions'),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/workout/plans/add'),
         icon: const Icon(Icons.add),

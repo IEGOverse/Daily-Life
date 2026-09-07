@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'workout_providers.dart';
 
@@ -65,6 +66,20 @@ class WorkoutPlanDetailScreen extends ConsumerWidget {
                             ),
                         ],
                       ),
+              ),
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                onPressed: () async {
+                  final session = await ref
+                      .read(workoutSessionRepositoryProvider)
+                      .start(workoutPlanId: value.id);
+                  ref.invalidate(workoutSessionsProvider);
+                  if (context.mounted) {
+                    context.push('/workout/sessions/${session.id}');
+                  }
+                },
+                icon: const Icon(Icons.play_arrow),
+                label: const Text('Start workout'),
               ),
             ],
           );

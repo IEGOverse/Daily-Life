@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/database_provider.dart';
 import 'data/exercise_repository.dart';
 import 'data/workout_plan_repository.dart';
+import 'data/workout_session_repository.dart';
 import 'domain/exercise.dart';
 import 'domain/workout_plan.dart';
+import 'domain/workout_session.dart';
 
 final exerciseRepositoryProvider = Provider<ExerciseRepository>(
   (ref) => ExerciseRepository(ref.watch(databaseProvider)),
@@ -41,4 +43,17 @@ final workoutPlanByIdProvider = FutureProvider.family<WorkoutPlan?, String>(
 final workoutPlanExercisesProvider =
     FutureProvider.family<List<WorkoutPlanExercise>, String>((ref, id) {
       return ref.watch(workoutPlanRepositoryProvider).exercisesWithDetails(id);
+    });
+
+final workoutSessionRepositoryProvider = Provider<WorkoutSessionRepository>(
+  (ref) => WorkoutSessionRepository(ref.watch(databaseProvider)),
+);
+
+final workoutSessionsProvider = FutureProvider<List<WorkoutSession>>((ref) {
+  return ref.watch(workoutSessionRepositoryProvider).getAll();
+});
+
+final workoutSessionByIdProvider =
+    FutureProvider.family<WorkoutSession?, String>((ref, id) {
+      return ref.watch(workoutSessionRepositoryProvider).byId(id);
     });

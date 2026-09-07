@@ -72,6 +72,10 @@ class WorkoutPlanRepository {
   }
 
   Future<void> delete(String id) async {
+    final sessions = await _database.getWorkoutSessionsForPlan(id);
+    if (sessions.isNotEmpty) {
+      throw StateError('Cannot delete a plan with session history.');
+    }
     await _database.transaction(() async {
       await _database.deleteWorkoutPlanExercises(id);
       await _database.deleteWorkoutPlan(id);

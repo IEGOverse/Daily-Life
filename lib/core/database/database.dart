@@ -169,6 +169,32 @@ class AppDatabase extends _$AppDatabase {
     workoutPlanExercises,
   )..where((t) => t.workoutPlanId.equals(planId))).go();
 
+  // --- Workout sessions ---------------------------------------------------
+  Future<List<WorkoutSession>> getAllWorkoutSessions() => (select(
+    workoutSessions,
+  )..orderBy([(t) => OrderingTerm.desc(t.startTime)])).get();
+  Future<WorkoutSession?> getWorkoutSessionById(String id) => (select(
+    workoutSessions,
+  )..where((t) => t.id.equals(id))).getSingleOrNull();
+  Future<List<WorkoutSession>> getWorkoutSessionsForPlan(String planId) =>
+      (select(workoutSessions)
+            ..where((t) => t.workoutPlanId.equals(planId))
+            ..orderBy([(t) => OrderingTerm.desc(t.startTime)]))
+          .get();
+  Future<void> insertWorkoutSession(WorkoutSession session) =>
+      into(workoutSessions).insert(session);
+  Future<void> completeWorkoutSession(
+    String id,
+    DateTime endTime,
+    int durationSeconds,
+  ) => (workoutSessions.update()..where((t) => t.id.equals(id))).write(
+    WorkoutSessionsCompanion(
+      endTime: Value(endTime),
+      durationSeconds: Value(durationSeconds),
+      completed: const Value(1),
+    ),
+  );
+
   // --- Transactions -------------------------------------------------------
   Future<List<Transaction>> getTransactionsForDay(DateTime day) async {
     final start = _localStartOfDay(day);
