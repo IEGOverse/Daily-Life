@@ -33,4 +33,39 @@ class StudySessionRepository {
   Future<void> update(StudySession session) => insert(session);
 
   Future<void> delete(String id) => _database.deleteStudySession(id);
+
+  /// Basic study statistics
+  Future<Map<String, dynamic>> getStatistics() async {
+    final sessions = await getAll();
+    if (sessions.isEmpty) return _emptyStats();
+
+    final totalMinutes = sessions.fold<double>(
+      0,
+      (sum, session) => sum + (session.durationSeconds ?? 0) / 60,
+    );
+
+    final totalUnderstanding = sessions.fold<int>(
+      0,
+      (sum, session) => sum + (session.understanding ?? 0),
+    );
+
+    final uniqueDays = <DateTime>{};
+    for (final session in sessions) {
+      uniqueDays.add(session.date);
+    }
+
+    return {
+      'totalSessions': sessions.length,
+      'totalMinutes': totalMinutes.round(),
+      'averageUnderstanding': (totalUnderstanding / sessions.length).round(),
+      'studyDays': uniqueDays.length,
+    };
+  }
+
+  Map<String, dynamic> _emptyStats() => {
+    'totalSessions': 0,
+    'totalMinutes': 0,
+    'averageUnderstanding': 0,
+    'studyDays': 0,
+  };
 }
