@@ -1,0 +1,50 @@
+import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:daily_life/features/dashboard/dashboard_screen.dart';
+import 'package:daily_life/features/schedule/schedule_screen.dart';
+import 'package:daily_life/features/add/add_screen.dart';
+import 'package:daily_life/features/insights/insights_screen.dart';
+import 'package:daily_life/features/workout/workout_screen.dart';
+import 'package:daily_life/features/study/study_screen.dart';
+import 'package:daily_life/features/finance/finance_screen.dart';
+import 'package:daily_life/features/nutrition/nutrition_screen.dart';
+import 'package:daily_life/features/habits/habits_screen.dart';
+
+final appRouterProvider = Provider<GoRouter>((ref) {
+  return GoRouter(
+    initialLocation: '/today',
+    routes: [
+      GoRoute(
+        path: '/today',
+        builder: (context, state) => const DashboardScreen(),
+      ),
+      GoRoute(
+        path: '/schedule',
+        builder: (context, state) => const ScheduleScreen(),
+      ),
+      GoRoute(path: '/add', builder: (context, state) => const AddScreen()),
+      GoRoute(
+        path: '/insights',
+        builder: (context, state) => const InsightsScreen(),
+      ),
+      GoRoute(
+        path: '/workout',
+        builder: (context, state) => const WorkoutScreen(),
+      ),
+      GoRoute(path: '/study', builder: (context, state) => const StudyScreen()),
+      GoRoute(
+        path: '/finance',
+        builder: (context, state) => const FinanceScreen(),
+      ),
+      GoRoute(
+        path: '/nutrition',
+        builder: (context, state) => const NutritionScreen(),
+      ),
+      GoRoute(
+        path: '/habits',
+        builder: (context, state) => const HabitsScreen(),
+      ),
+    ],
+  );
+});
