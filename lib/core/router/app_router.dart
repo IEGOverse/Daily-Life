@@ -8,6 +8,9 @@ import 'package:daily_life/features/add/add_screen.dart';
 import 'package:daily_life/features/insights/insights_screen.dart';
 import 'package:daily_life/features/workout/add_exercise_screen.dart';
 import 'package:daily_life/features/workout/workout_exercise_detail_screen.dart';
+import 'package:daily_life/features/workout/add_workout_plan_screen.dart';
+import 'package:daily_life/features/workout/workout_plan_detail_screen.dart';
+import 'package:daily_life/features/workout/workout_plans_screen.dart';
 import 'package:daily_life/features/workout/workout_screen.dart';
 import 'package:daily_life/features/study/study_screen.dart';
 import 'package:daily_life/features/finance/finance_screen.dart';
@@ -51,6 +54,22 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'add',
             builder: (context, state) => const AddExerciseScreen(),
+          ),
+          GoRoute(
+            path: 'plans',
+            builder: (context, state) => const WorkoutPlansScreen(),
+            routes: [
+              GoRoute(
+                path: 'add',
+                builder: (context, state) => const AddWorkoutPlanScreen(),
+              ),
+              GoRoute(
+                path: ':planId',
+                builder: (context, state) => WorkoutPlanDetailScreen(
+                  planId: state.pathParameters['planId']!,
+                ),
+              ),
+            ],
           ),
         ],
       ),

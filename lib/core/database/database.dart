@@ -133,20 +133,41 @@ class AppDatabase extends _$AppDatabase {
 
   // --- Exercises (workout library) ----------------------------------------
   Future<List<Exercise>> getAllExercises() =>
-      (select(exercises)
-            ..orderBy([
-              (t) => OrderingTerm.asc(t.muscleGroup),
-              (t) => OrderingTerm.asc(t.name),
-            ]))
+      (select(exercises)..orderBy([
+            (t) => OrderingTerm.asc(t.muscleGroup),
+            (t) => OrderingTerm.asc(t.name),
+          ]))
           .get();
   Future<Exercise?> getExerciseById(String id) =>
       (select(exercises)..where((t) => t.id.equals(id))).getSingleOrNull();
   Future<List<Exercise>> getExercisesByMuscleGroup(String muscleGroup) =>
-      (select(exercises)..where((t) => t.muscleGroup.equals(muscleGroup))).get();
+      (select(
+        exercises,
+      )..where((t) => t.muscleGroup.equals(muscleGroup))).get();
   Future<void> insertExercise(Exercise exercise) =>
       into(exercises).insert(exercise);
   Future<void> deleteExercise(String id) =>
       (delete(exercises)..where((t) => t.id.equals(id))).go();
+
+  // --- Workout plans ------------------------------------------------------
+  Future<List<WorkoutPlan>> getAllWorkoutPlans() =>
+      (select(workoutPlans)..orderBy([(t) => OrderingTerm.asc(t.name)])).get();
+  Future<WorkoutPlan?> getWorkoutPlanById(String id) =>
+      (select(workoutPlans)..where((t) => t.id.equals(id))).getSingleOrNull();
+  Future<void> insertWorkoutPlan(WorkoutPlan plan) =>
+      into(workoutPlans).insert(plan);
+  Future<void> deleteWorkoutPlan(String id) =>
+      (delete(workoutPlans)..where((t) => t.id.equals(id))).go();
+  Future<List<WorkoutPlanExercise>> getWorkoutPlanExercises(String planId) =>
+      (select(workoutPlanExercises)
+            ..where((t) => t.workoutPlanId.equals(planId))
+            ..orderBy([(t) => OrderingTerm.asc(t.sortOrder)]))
+          .get();
+  Future<void> insertWorkoutPlanExercise(WorkoutPlanExercise exercise) =>
+      into(workoutPlanExercises).insert(exercise);
+  Future<void> deleteWorkoutPlanExercises(String planId) => (delete(
+    workoutPlanExercises,
+  )..where((t) => t.workoutPlanId.equals(planId))).go();
 
   // --- Transactions -------------------------------------------------------
   Future<List<Transaction>> getTransactionsForDay(DateTime day) async {

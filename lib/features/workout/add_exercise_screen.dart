@@ -34,8 +34,8 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
       return;
     }
     setState(() => _saving = true);
-    final micros =
-        (DateTime.now().microsecondsSinceEpoch % 1000000000).toString();
+    final micros = (DateTime.now().microsecondsSinceEpoch % 1000000000)
+        .toString();
     final slug = _nameController.text.trim().toLowerCase().replaceAll(' ', '_');
     final exercise = Exercise(
       id: 'exercise_${micros}_$slug',
@@ -94,9 +94,7 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
                 for (final group in exerciseMuscleGroups)
                   DropdownMenuItem(
                     value: group,
-                    child: Text(
-                      group[0].toUpperCase() + group.substring(1),
-                    ),
+                    child: Text(group[0].toUpperCase() + group.substring(1)),
                   ),
               ],
               onChanged: (value) => setState(() => _muscleGroup = value),

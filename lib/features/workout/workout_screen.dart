@@ -37,6 +37,11 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
             icon: const Icon(Icons.add_circle_outline),
             onPressed: () => context.push('/workout/add'),
           ),
+          IconButton(
+            tooltip: 'Workout plans',
+            icon: const Icon(Icons.view_list_outlined),
+            onPressed: () => context.push('/workout/plans'),
+          ),
         ],
       ),
       body: exercisesAsync.when(
@@ -75,8 +80,10 @@ class _ExerciseLibrary extends StatelessWidget {
   Widget build(BuildContext context) {
     final query = searchController.text.trim().toLowerCase();
     final filtered = exercises.where((e) {
-      final matchesGroup = selectedGroup == null || e.muscleGroup == selectedGroup;
-      final matchesQuery = query.isEmpty || e.name.toLowerCase().contains(query);
+      final matchesGroup =
+          selectedGroup == null || e.muscleGroup == selectedGroup;
+      final matchesQuery =
+          query.isEmpty || e.name.toLowerCase().contains(query);
       return matchesGroup && matchesQuery;
     }).toList();
 
@@ -120,7 +127,9 @@ class _ExerciseLibrary extends StatelessWidget {
           child: filtered.isEmpty
               ? Center(
                   child: Text(
-                    exercises.isEmpty ? 'Your library is empty.' : 'No exercises match.',
+                    exercises.isEmpty
+                        ? 'Your library is empty.'
+                        : 'No exercises match.',
                   ),
                 )
               : ListView.builder(
@@ -135,19 +144,21 @@ class _ExerciseLibrary extends StatelessWidget {
                       ),
                       child: ListTile(
                         leading: CircleAvatar(
-                          backgroundColor:
-                              Theme.of(context).colorScheme.secondaryContainer,
+                          backgroundColor: Theme.of(context)
+                              .colorScheme
+                              .secondaryContainer,
                           child: Icon(
                             Icons.fitness_center,
-                            color: Theme.of(context).colorScheme.onSecondaryContainer,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSecondaryContainer,
                           ),
                         ),
                         title: Text(exercise.name),
                         subtitle: Text(exercise.muscleGroupLabel),
                         trailing: const Icon(Icons.chevron_right),
-                        onTap: () => context.push(
-                          '/workout/exercise/${exercise.id}',
-                        ),
+                        onTap: () =>
+                            context.push('/workout/exercise/${exercise.id}'),
                       ),
                     );
                   },

@@ -1,7 +1,7 @@
 {
   "current_phase": "Phase 2 - Workout",
   "current_sprint": "Sprint 2 - Workout",
-  "current_task": "Workout plans",
+  "current_task": "Workout sessions",
   "task_status": "IN_PROGRESS",
   "phase_1_complete": true,
   "sprint_1_closed": true,
@@ -22,7 +22,8 @@
     "Calendar month grid + per-day history with completion actions",
     "Quick-add activity form (title/category/date/start/end/notes)",
     "Review fixes: schedule timezone/instant conversion, seed single-flight lock, post-seed invalidation, lazy current-week materialization, clockProvider-based calendar today",
-    "Exercise library: repository, 15 seeded exercises, search/filter UI, instructions detail, personal exercise form"
+    "Exercise library: repository, 15 seeded exercises, search/filter UI, instructions detail, personal exercise form",
+    "Workout plans: transactional plan/link repository, plan list/create/detail screens, exercise selection, default sets/reps/rest"
   ],
   "validation_retries": 0,
   "fix_retries": 0,
@@ -31,8 +32,8 @@
   "last_validation_result": "PASS",
   "global_retry_count": 0,
   "consecutive_failures": 0,
-  "timestamp": "2026-09-08 01:30:00",
-  "next_action": "Phase 2 - Workout: Task 2 Workout plans.",
+  "timestamp": "2026-09-08 02:15:00",
+  "next_action": "Phase 2 - Workout: Task 3 Workout sessions.",
   "stop_reason": "",
   "human_decision_required": false
 }

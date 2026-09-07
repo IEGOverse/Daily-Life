@@ -17,7 +17,8 @@ class WorkoutExerciseDetailScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('Exercise')),
       body: exerciseAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => const Center(child: Text('Failed to load exercise.')),
+        error: (error, _) =>
+            const Center(child: Text('Failed to load exercise.')),
         data: (exercise) {
           if (exercise == null) {
             return const Center(child: Text('Exercise not found.'));
@@ -86,10 +87,7 @@ class _Section extends StatelessWidget {
         Text(title, style: theme.textTheme.titleMedium),
         const SizedBox(height: 8),
         Card(
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: child,
-          ),
+          child: Padding(padding: const EdgeInsets.all(12), child: child),
         ),
       ],
     );

@@ -28,6 +28,7 @@ IN PROGRESS
 - [x] Phase 1 Task 5 — Calendar/history (month calendar grid + per-day activity list with completion actions; routed at `/calendar`, reachable from the dashboard date header)
 - [x] Phase 1 Task 6 — Add activity (quick-add form: title, category, date, start/end time, notes; saves via `ActivityRepository.insert` and refreshes providers; `/add` route + dashboard quick-add icon) — Phase 1 (Sprint 1) COMPLETE
 - [x] Phase 2 Task 1 — Exercise library (PRD §7): `Exercise` domain model, `ExerciseRepository` + lazy single-flight idempotent seeding of 15 standard exercises with instructions, `exercisesProvider`/`exerciseByIdProvider`, `/workout` library browser (muscle-group chips + search + empty state), `/workout/exercise/:id` detail with instructions, `/workout/add` quick-add form; DB helpers (`getAllExercises`, `getExerciseById`, `getExercisesByMuscleGroup`, `insertExercise`, `deleteExercise`)
+- [x] Phase 2 Task 2 — Workout plans: transactional plan/link repository, plan providers, `/workout/plans` list and empty state, plan creation with exercise selection and default sets/reps/rest, and `/workout/plans/:planId` detail view
 
 ## Sprint 0 Checklist
 - [x] Verify Flutter/Dart installation
@@ -67,13 +68,13 @@ IN PROGRESS
 ## Verification Results
 - `dart analyze lib/`: No issues found
 - `dart format --output=none lib test`: clean
-- `flutter test`: 68 tests passed
+- `flutter test`: 72 tests passed
 - `flutter build bundle`: exit 0
 - `build_runner`: 38 outputs generated successfully
 
 ## Current Task
-Phase 2 — Workout Task 1 (Exercise library) is implemented and validated. The
-task checkpoint is being committed; next is Task 2 (Workout plans).
+Phase 2 — Workout Task 2 (Workout plans) is implemented and validated. The
+task checkpoint is being committed; next is Task 3 (Workout sessions).
 
 CODE REVIEW (Stage 5) — PASSED after two CHANGES_REQUIRED rounds:
 - Round A findings (all fixed): HIGH — schedule-generated activities stored
@@ -96,9 +97,8 @@ millisecond instant; reader returns a local `DateTime`. Hence write-side
 queries compare local-midnight UTC instants — consistent end to end.
 
 ## Next Task
-Phase 2 — Workout Task 2: Workout plans. Use the existing `WorkoutPlans` and
-`WorkoutPlanExercises` tables to create, browse, and inspect plans while keeping
-exercise access behind the workout repository/providers.
+Phase 2 — Workout Task 3: Workout sessions. Use the existing `WorkoutSessions`
+table and connect sessions to the selected workout plan.
 
 ## Orchestrator Review — Round 2 Fixes (COMPLETE)
 Second round of orchestrator review fixes applied and verified. Sprint 1 must NOT
@@ -150,9 +150,9 @@ per `docs/DATABASE.md`):
 - Review: APPROVED (after 2 CHANGES_REQUIRED rounds → fixes → re-review)
 
 ## Phase 2 — Workout Task Status
-- [x] 1. Exercise library — DONE (checkpoint pending/pushed with this increment)
-- [ ] 2. Workout plans — NEXT
-- [ ] 3. Workout sessions
+- [x] 1. Exercise library — DONE (committed and pushed)
+- [x] 2. Workout plans — DONE (checkpoint pending/pushed with this increment)
+- [ ] 3. Workout sessions — NEXT
 - [ ] 4. Set logging
 - [ ] 5. History
 
@@ -174,4 +174,4 @@ If an agent/session stops unexpectedly:
 6. Commit only when the increment is stable.
 
 ## Last Updated
-2026-09-08 (Phase 2 Task 1 complete: exercise library; 68 tests, analyze clean, build bundle exit 0)
+2026-09-08 (Phase 2 Task 2 complete: workout plans; 72 tests, analyze clean, build bundle exit 0)
