@@ -118,10 +118,7 @@ void main() {
     });
 
     test('progress is 0 when nothing planned', () {
-      final empty = DashboardSummary(
-        day: DateTime(2026, 9, 8),
-        activities: [],
-      );
+      final empty = DashboardSummary(day: DateTime(2026, 9, 8), activities: []);
       expect(empty.progress, 0.0);
       expect(empty.totalActivities, 0);
     });

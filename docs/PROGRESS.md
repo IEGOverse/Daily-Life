@@ -22,6 +22,7 @@ IN PROGRESS
 - [x] Roadmap drafted
 - [x] AI-agent rules defined
 - [x] Phase 1 Task 1 — Today dashboard (greeting, daily progress, NOW/NEXT UP, timeline, finance strip; driven by live drift data)
+- [x] Phase 1 Task 2 — Recurring schedule (PRD §5 university schedule seeded; weekly activity generation idempotent; Schedule screen with day selector)
 
 ## Sprint 0 Checklist
 - [x] Verify Flutter/Dart installation
@@ -68,22 +69,23 @@ IN PROGRESS
 ## Current Task
 Sprint 1 in progress.
 
-DONE (First increment, committed): Task 1 — Today dashboard. The dashboard
-(`lib/features/dashboard/`) now renders live data via drift: greeting +
-calendar header, daily progress card (completed/total + progress bar),
-NOW card, NEXT UP card, "Today's Timeline" (ordered ActivityCards),
-and a Finance strip (balance/income/spent from the day's transactions).
-Loading/empty/error/refresh states are handled. Backed by `clockProvider`
-(overridable in tests) and `dashboardSummaryProvider` (FutureProvider).
-New files: `data/dashboard_repository.dart`, `domain/dashboard_summary.dart`,
-`domain/today_activity.dart`, `dashboard_providers.dart`,
-`core/database/database_provider.dart`.
+DONE (Second increment, committed): Task 2 — Recurring schedule.
+`lib/features/schedule/` now contains the schedule feature. `ScheduleSeeder`
+holds the 15 PRD §5 classes (Mon/Wed ×3, Tue/Thu ×3, Thu-only Kuliah Umum,
+Fri ×2). `generateActivitiesForDay` creates activities from active weekly
+schedules idempotently (`hasActivityForSchedule`). `ensureSeededAndGenerated`
+runs once at app startup (via `useSeeding`/`_seedAndGenerateFutureProvider`)
+seeding schedules if empty and generating the current week's activities.
+`ScheduleScreen` shows a Mon–Sun chip selector (current weekday highlighted)
+and the day's class list with time ranges; empty state for weekends.
 
 ## Next Task
-Task 2 — Recurring schedule: seed the PRD §5 initial university schedule;
-generate today's activities from weekly schedules (idempotent via
-`hasActivityForSchedule`); build the Schedule screen to view the week.
-Requires reading the rest of PRD §5 and finalizing the recurrence strategy.
+Task 3 — Activity model: refine the `Activities` row semantics (status
+lifecycle, schedule linkage, manual creation), and surface activities from the
+Schedule screen. Expect to add a dedicated activity feature layer (domain
+models already exist under `dashboard/`); may promote `TodayActivity` usage
+across both dashboard and schedule features. Revisit `ActivityStatus` mapping
+once completion (Task 4) and manual add (Task 6) are wired.
 
 ## Orchestrator Review — Round 2 Fixes (COMPLETE)
 Second round of orchestrator review fixes applied and verified. Sprint 1 must NOT
@@ -119,17 +121,17 @@ per `docs/DATABASE.md`):
 
 ## Sprint 1 — Current Task Status
 - [x] 1. Today dashboard — DONE (committed)
-- [ ] 2. Recurring schedule
+- [x] 2. Recurring schedule — DONE (committed)
 - [ ] 3. Activity model
 - [ ] 4. Activity completion
 - [ ] 5. Calendar/history
 - [ ] 6. Add activity
 
-## Verification Results (Task 1 increment)
+## Verification Results (Task 2 increment)
 - `dart analyze lib/ test/`: No issues found
 - `dart format --output=none lib/ test/`: clean
-- `flutter test`: All 23 tests passed (+23)
-- `flutter build bundle`: exit 0, `build/flutter_assets` present
+- `flutter test`: All 34 tests passed (+34)
+- `flutter build bundle`: exit 0
 
 ## Known Issues / Decisions Pending
 - Flutter SDK has compatibility issues with Dart SDK 3.13.2 causing `dart test` to include framework errors (framework-level, not code-level). `flutter test` passes with +4: All tests passed!
@@ -149,4 +151,4 @@ If an agent/session stops unexpectedly:
 6. Commit only when the increment is stable.
 
 ## Last Updated
-2026-09-07 (Sprint 1 increment — Task 1 Today dashboard committed; analyze clean, tests 23/23, build bundle exit 0)
+2026-09-07 (Sprint 1 increment — Task 2 Recurring schedule committed; analyze clean, tests 34/34, build bundle exit 0)
