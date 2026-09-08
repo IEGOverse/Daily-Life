@@ -4,10 +4,10 @@
 > The repository, Git history, and this file are authoritative. Do not rely on previous chat memory.
 
 ## Current Phase
-Phase 7 — Smart Features (next up)
+Phase 7 — Smart Features (IN PROGRESS — implementation complete, checkpoint in progress)
 
 ## Current Sprint
-Sprint 6 — Habits & Analytics (COMPLETE)
+Sprint 7 — Smart Features (IN PROGRESS)
 
 ## Overall Status
 IN PROGRESS
@@ -32,6 +32,7 @@ IN PROGRESS
 - [x] Phase 2 Task 3 — Workout sessions (session repository, start-from-plan flow, completion with duration validation, `/workout/sessions/:id` detail, history list)
 - [x] Phase 2 Task 4 — Set logging (`WorkoutSetLogRepository`, concurrent-safe single-flight materialization, reps/weight editing, `/workout/sessions/:sessionId/sets` screen)
 - [x] Phase 2 Task 5 — Workout history (completed-session summary, total minutes, completed-set count, chronological completed-workout list, `/workout/history`)
+- [x] Phase 7 — Smart Features (notifications, meal recommendations, local personal insights; validation; docs; checkpoint) — implemented, validation passed
 
 ## Sprint 0 Checklist
 - [x] Verify Flutter/Dart installation
@@ -60,14 +61,13 @@ IN PROGRESS
 ## Verification Results
 - `dart analyze lib/ test/`: No issues found
 - `dart format --output=none lib test`: clean
-- `flutter test`: 110 tests pass (92 prior + 18 Habits/Insights)
+- `flutter test`: 130 tests pass (110 prior + 20 Phase 7: reminders, recommendations, insight generator)
 - `flutter build bundle`: exit 0
 - `flutter build apk --debug`: exit 0
 - `build_runner`: generates successfully
 
 ## Current Task
-Phase 7 — Smart Features (notifications, meal recommendation improvements,
-AI personal insights; next approved phase; pending)
+Phase 7 — Smart Features fully implemented and validated; checkpoint commit pending.
 
 ## Phase 4 — Finance Status
 COMPLETE — income/expense transactions, categories, real-time derived balance,
@@ -131,10 +131,38 @@ COMPLETE — all five approved tasks delivered and validated.
 - [x] Task 4 — History
 - [x] Task 5 — Basic study statistics
 
+## Phase 7 — Smart Features Status
+COMPLETE — configurable local notifications, variety-aware meal
+recommendations, and locally-generated personal insights delivered and
+validated; checkpoint commit in progress.
+
+- Notifications: `NotificationRules` table (schema v3, additive migration),
+  `NotificationRulesRepository` (seeded defaults), `ReminderScheduler`
+  (pure `buildReminders` decision logic: N-min-before-activity one-shots +
+  fixed daily habit/finance reminders; id 9100/9200 reserved for daily),
+  `NotificationService` (flutter_local_notifications ^22 + timezone +
+  flutter_timezone; guarded no-op off-Android/on tests), `/reminders`
+  screen (activity lead dropdown + daily time pickers, persisted),
+  dashboard settings → reminders, manifest permissions + boot receivers,
+  Android core-library desugaring enabled in app build.gradle.kts
+- Meal recommendations: transparent local engine (meal type by clock,
+  recent-food variety weighting, soft calorie estimate), recent-food
+  window query, suggestions card on Nutrition screen labeled as estimates
+- Local personal insights: `InsightGenerator` compares current vs previous
+  `WeeklySummary` (study time, workouts, tasks, habits, daily score,
+  income; typed directions, explainable), "Personal insights" card on
+  Insights screen noting nothing leaves the device; no AI service used
+- Tests: reminder scheduler+rules, recommendation engine + recent-food
+  window, insight generator, notification_rules table persistence,
+  schema version updated to 3, insights screen empty-state now scrolls
+
 ## Known Issues / Decisions Pending
 - Recurrence/occurrence strategy not finalized (Phase 3+).
-- Finance (Phase 4), Nutrition (Phase 5), Habits & Analytics (Phase 6) complete.
+- Phase 7 processed entirely on-device; no external AI/cloud usage.
 - Daily Score rule documented in DATABASE.md §4 (transparent; taskScore + habitScore).
+- Next roadmap checkpoint: Phase 8 — Portfolio / Production (refactoring,
+  automated tests hardening, performance checks, security review, README,
+  architecture documentation, screenshots, demo video, release APK).
 
 ## Recovery Instructions
 If an agent/session stops unexpectedly:
@@ -146,5 +174,5 @@ If an agent/session stops unexpectedly:
 6. Commit only when the increment is stable.
 
 ## Last Updated
-2026-09-08 Phase 6 Habits & Analytics complete (habits, streaks, transparent
-daily score, time analytics, cross-module insights dashboard).
+2026-09-08 Phase 7 Smart Features complete (notifications, meal
+recommendations, local personal insights; validation passed; checkpoint in progress).

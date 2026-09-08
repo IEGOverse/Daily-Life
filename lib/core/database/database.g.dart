@@ -6687,6 +6687,382 @@ class MealFoodsCompanion extends UpdateCompanion<MealFood> {
   }
 }
 
+class $NotificationRulesTable extends NotificationRules
+    with TableInfo<$NotificationRulesTable, NotificationRule> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NotificationRulesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _ruleIdMeta = const VerificationMeta('ruleId');
+  @override
+  late final GeneratedColumn<String> ruleId = GeneratedColumn<String>(
+    'rule_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _enabledMeta = const VerificationMeta(
+    'enabled',
+  );
+  @override
+  late final GeneratedColumn<int> enabled = GeneratedColumn<int>(
+    'enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: Constant(1),
+  );
+  static const VerificationMeta _minutesBeforeMeta = const VerificationMeta(
+    'minutesBefore',
+  );
+  @override
+  late final GeneratedColumn<int> minutesBefore = GeneratedColumn<int>(
+    'minutes_before',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: Constant(15),
+  );
+  static const VerificationMeta _timeOfDayMeta = const VerificationMeta(
+    'timeOfDay',
+  );
+  @override
+  late final GeneratedColumn<String> timeOfDay = GeneratedColumn<String>(
+    'time_of_day',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    ruleId,
+    enabled,
+    minutesBefore,
+    timeOfDay,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'notification_rules';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NotificationRule> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('rule_id')) {
+      context.handle(
+        _ruleIdMeta,
+        ruleId.isAcceptableOrUnknown(data['rule_id']!, _ruleIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_ruleIdMeta);
+    }
+    if (data.containsKey('enabled')) {
+      context.handle(
+        _enabledMeta,
+        enabled.isAcceptableOrUnknown(data['enabled']!, _enabledMeta),
+      );
+    }
+    if (data.containsKey('minutes_before')) {
+      context.handle(
+        _minutesBeforeMeta,
+        minutesBefore.isAcceptableOrUnknown(
+          data['minutes_before']!,
+          _minutesBeforeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('time_of_day')) {
+      context.handle(
+        _timeOfDayMeta,
+        timeOfDay.isAcceptableOrUnknown(data['time_of_day']!, _timeOfDayMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {ruleId};
+  @override
+  NotificationRule map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NotificationRule(
+      ruleId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}rule_id'],
+      )!,
+      enabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}enabled'],
+      )!,
+      minutesBefore: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}minutes_before'],
+      )!,
+      timeOfDay: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}time_of_day'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $NotificationRulesTable createAlias(String alias) {
+    return $NotificationRulesTable(attachedDatabase, alias);
+  }
+}
+
+class NotificationRule extends DataClass
+    implements Insertable<NotificationRule> {
+  /// Stable rule id, e.g. 'activity', 'habit', 'finance'.
+  final String ruleId;
+
+  /// Whether this reminder type is enabled.
+  final int enabled;
+
+  /// Lead time in minutes before a scheduled activity (activity rule).
+  final int minutesBefore;
+
+  /// Local time "HH:mm" for fixed daily reminders (habit/finance rules).
+  final String? timeOfDay;
+  final DateTime updatedAt;
+  const NotificationRule({
+    required this.ruleId,
+    required this.enabled,
+    required this.minutesBefore,
+    this.timeOfDay,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['rule_id'] = Variable<String>(ruleId);
+    map['enabled'] = Variable<int>(enabled);
+    map['minutes_before'] = Variable<int>(minutesBefore);
+    if (!nullToAbsent || timeOfDay != null) {
+      map['time_of_day'] = Variable<String>(timeOfDay);
+    }
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  NotificationRulesCompanion toCompanion(bool nullToAbsent) {
+    return NotificationRulesCompanion(
+      ruleId: Value(ruleId),
+      enabled: Value(enabled),
+      minutesBefore: Value(minutesBefore),
+      timeOfDay: timeOfDay == null && nullToAbsent
+          ? const Value.absent()
+          : Value(timeOfDay),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory NotificationRule.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NotificationRule(
+      ruleId: serializer.fromJson<String>(json['ruleId']),
+      enabled: serializer.fromJson<int>(json['enabled']),
+      minutesBefore: serializer.fromJson<int>(json['minutesBefore']),
+      timeOfDay: serializer.fromJson<String?>(json['timeOfDay']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'ruleId': serializer.toJson<String>(ruleId),
+      'enabled': serializer.toJson<int>(enabled),
+      'minutesBefore': serializer.toJson<int>(minutesBefore),
+      'timeOfDay': serializer.toJson<String?>(timeOfDay),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  NotificationRule copyWith({
+    String? ruleId,
+    int? enabled,
+    int? minutesBefore,
+    Value<String?> timeOfDay = const Value.absent(),
+    DateTime? updatedAt,
+  }) => NotificationRule(
+    ruleId: ruleId ?? this.ruleId,
+    enabled: enabled ?? this.enabled,
+    minutesBefore: minutesBefore ?? this.minutesBefore,
+    timeOfDay: timeOfDay.present ? timeOfDay.value : this.timeOfDay,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  NotificationRule copyWithCompanion(NotificationRulesCompanion data) {
+    return NotificationRule(
+      ruleId: data.ruleId.present ? data.ruleId.value : this.ruleId,
+      enabled: data.enabled.present ? data.enabled.value : this.enabled,
+      minutesBefore: data.minutesBefore.present
+          ? data.minutesBefore.value
+          : this.minutesBefore,
+      timeOfDay: data.timeOfDay.present ? data.timeOfDay.value : this.timeOfDay,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NotificationRule(')
+          ..write('ruleId: $ruleId, ')
+          ..write('enabled: $enabled, ')
+          ..write('minutesBefore: $minutesBefore, ')
+          ..write('timeOfDay: $timeOfDay, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(ruleId, enabled, minutesBefore, timeOfDay, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NotificationRule &&
+          other.ruleId == this.ruleId &&
+          other.enabled == this.enabled &&
+          other.minutesBefore == this.minutesBefore &&
+          other.timeOfDay == this.timeOfDay &&
+          other.updatedAt == this.updatedAt);
+}
+
+class NotificationRulesCompanion extends UpdateCompanion<NotificationRule> {
+  final Value<String> ruleId;
+  final Value<int> enabled;
+  final Value<int> minutesBefore;
+  final Value<String?> timeOfDay;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const NotificationRulesCompanion({
+    this.ruleId = const Value.absent(),
+    this.enabled = const Value.absent(),
+    this.minutesBefore = const Value.absent(),
+    this.timeOfDay = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NotificationRulesCompanion.insert({
+    required String ruleId,
+    this.enabled = const Value.absent(),
+    this.minutesBefore = const Value.absent(),
+    this.timeOfDay = const Value.absent(),
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  }) : ruleId = Value(ruleId),
+       updatedAt = Value(updatedAt);
+  static Insertable<NotificationRule> custom({
+    Expression<String>? ruleId,
+    Expression<int>? enabled,
+    Expression<int>? minutesBefore,
+    Expression<String>? timeOfDay,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (ruleId != null) 'rule_id': ruleId,
+      if (enabled != null) 'enabled': enabled,
+      if (minutesBefore != null) 'minutes_before': minutesBefore,
+      if (timeOfDay != null) 'time_of_day': timeOfDay,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NotificationRulesCompanion copyWith({
+    Value<String>? ruleId,
+    Value<int>? enabled,
+    Value<int>? minutesBefore,
+    Value<String?>? timeOfDay,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return NotificationRulesCompanion(
+      ruleId: ruleId ?? this.ruleId,
+      enabled: enabled ?? this.enabled,
+      minutesBefore: minutesBefore ?? this.minutesBefore,
+      timeOfDay: timeOfDay ?? this.timeOfDay,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (ruleId.present) {
+      map['rule_id'] = Variable<String>(ruleId.value);
+    }
+    if (enabled.present) {
+      map['enabled'] = Variable<int>(enabled.value);
+    }
+    if (minutesBefore.present) {
+      map['minutes_before'] = Variable<int>(minutesBefore.value);
+    }
+    if (timeOfDay.present) {
+      map['time_of_day'] = Variable<String>(timeOfDay.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NotificationRulesCompanion(')
+          ..write('ruleId: $ruleId, ')
+          ..write('enabled: $enabled, ')
+          ..write('minutesBefore: $minutesBefore, ')
+          ..write('timeOfDay: $timeOfDay, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -6708,6 +7084,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $FoodsTable foods = $FoodsTable(this);
   late final $MealsTable meals = $MealsTable(this);
   late final $MealFoodsTable mealFoods = $MealFoodsTable(this);
+  late final $NotificationRulesTable notificationRules =
+      $NotificationRulesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -6728,6 +7106,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     foods,
     meals,
     mealFoods,
+    notificationRules,
   ];
 }
 
@@ -12309,6 +12688,230 @@ typedef $$MealFoodsTableProcessedTableManager =
       MealFood,
       PrefetchHooks Function({bool mealId, bool foodId})
     >;
+typedef $$NotificationRulesTableCreateCompanionBuilder =
+    NotificationRulesCompanion Function({
+      required String ruleId,
+      Value<int> enabled,
+      Value<int> minutesBefore,
+      Value<String?> timeOfDay,
+      required DateTime updatedAt,
+      Value<int> rowid,
+    });
+typedef $$NotificationRulesTableUpdateCompanionBuilder =
+    NotificationRulesCompanion Function({
+      Value<String> ruleId,
+      Value<int> enabled,
+      Value<int> minutesBefore,
+      Value<String?> timeOfDay,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$NotificationRulesTableFilterComposer
+    extends Composer<_$AppDatabase, $NotificationRulesTable> {
+  $$NotificationRulesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get ruleId => $composableBuilder(
+    column: $table.ruleId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get enabled => $composableBuilder(
+    column: $table.enabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get minutesBefore => $composableBuilder(
+    column: $table.minutesBefore,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get timeOfDay => $composableBuilder(
+    column: $table.timeOfDay,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$NotificationRulesTableOrderingComposer
+    extends Composer<_$AppDatabase, $NotificationRulesTable> {
+  $$NotificationRulesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get ruleId => $composableBuilder(
+    column: $table.ruleId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get enabled => $composableBuilder(
+    column: $table.enabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get minutesBefore => $composableBuilder(
+    column: $table.minutesBefore,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get timeOfDay => $composableBuilder(
+    column: $table.timeOfDay,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$NotificationRulesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $NotificationRulesTable> {
+  $$NotificationRulesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get ruleId =>
+      $composableBuilder(column: $table.ruleId, builder: (column) => column);
+
+  GeneratedColumn<int> get enabled =>
+      $composableBuilder(column: $table.enabled, builder: (column) => column);
+
+  GeneratedColumn<int> get minutesBefore => $composableBuilder(
+    column: $table.minutesBefore,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get timeOfDay =>
+      $composableBuilder(column: $table.timeOfDay, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$NotificationRulesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NotificationRulesTable,
+          NotificationRule,
+          $$NotificationRulesTableFilterComposer,
+          $$NotificationRulesTableOrderingComposer,
+          $$NotificationRulesTableAnnotationComposer,
+          $$NotificationRulesTableCreateCompanionBuilder,
+          $$NotificationRulesTableUpdateCompanionBuilder,
+          (
+            NotificationRule,
+            BaseReferences<
+              _$AppDatabase,
+              $NotificationRulesTable,
+              NotificationRule
+            >,
+          ),
+          NotificationRule,
+          PrefetchHooks Function()
+        > {
+  $$NotificationRulesTableTableManager(
+    _$AppDatabase db,
+    $NotificationRulesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$NotificationRulesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$NotificationRulesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$NotificationRulesTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> ruleId = const Value.absent(),
+                Value<int> enabled = const Value.absent(),
+                Value<int> minutesBefore = const Value.absent(),
+                Value<String?> timeOfDay = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NotificationRulesCompanion(
+                ruleId: ruleId,
+                enabled: enabled,
+                minutesBefore: minutesBefore,
+                timeOfDay: timeOfDay,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String ruleId,
+                Value<int> enabled = const Value.absent(),
+                Value<int> minutesBefore = const Value.absent(),
+                Value<String?> timeOfDay = const Value.absent(),
+                required DateTime updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => NotificationRulesCompanion.insert(
+                ruleId: ruleId,
+                enabled: enabled,
+                minutesBefore: minutesBefore,
+                timeOfDay: timeOfDay,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$NotificationRulesTable, NotificationRule>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $NotificationRulesTable,
+                    NotificationRule
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$NotificationRulesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $NotificationRulesTable,
+      NotificationRule,
+      $$NotificationRulesTableFilterComposer,
+      $$NotificationRulesTableOrderingComposer,
+      $$NotificationRulesTableAnnotationComposer,
+      $$NotificationRulesTableCreateCompanionBuilder,
+      $$NotificationRulesTableUpdateCompanionBuilder,
+      (
+        NotificationRule,
+        BaseReferences<
+          _$AppDatabase,
+          $NotificationRulesTable,
+          NotificationRule
+        >,
+      ),
+      NotificationRule,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -12343,4 +12946,6 @@ class $AppDatabaseManager {
       $$MealsTableTableManager(_db, _db.meals);
   $$MealFoodsTableTableManager get mealFoods =>
       $$MealFoodsTableTableManager(_db, _db.mealFoods);
+  $$NotificationRulesTableTableManager get notificationRules =>
+      $$NotificationRulesTableTableManager(_db, _db.notificationRules);
 }

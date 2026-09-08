@@ -139,6 +139,18 @@
 - quantity: REAL
 - unit: TEXT
 
+### notification_rules
+Local-only settings for scheduling device notifications (added in schema v3).
+- rule_id: TEXT/UUID, PK ('activity' | 'habit' | 'finance')
+- enabled: INTEGER 0/1, default 1
+- minutes_before: INTEGER, default 15 (lead before a scheduled activity)
+- time_of_day: TEXT nullable, 'HH:mm' (fixed daily reminders)
+- updated_at: DATETIME
+
+Reminders are computed locally from these rules + that day's activities
+(PRD §13) and scheduled via flutter_local_notifications on the device. No
+rule value or reminder schedule leaves the device (PRD §15).
+
 ## 3. Relationships
 
 schedules 1 → many activities
@@ -187,11 +199,23 @@ Time analytics:
 All analytics are derived on the fly from authoritative records. No
 analytics summary rows are stored, and no module data is duplicated.
 
+Meal recommendations:
+Derived locally from the user's food database and recent meal history.
+Rules are transparent: the meal type follows the clock, foods eaten within
+the last few days are de-prioritized for variety, and a soft per-meal
+calorie estimate is shown. Recommendations are estimates, never presented
+as medical advice, and never stored or sent off-device.
+
+Personal insights:
+Generated locally by comparing the current week's WeeklySummary with the
+previous week's (e.g. study time, workouts, tasks, habits, daily score,
+income). Every insight is typed and explainable. No summary or insight is
+stored, and nothing leaves the device (no external AI service is used).
+
 ## 5. Future Tables
 Possible later additions:
 - users
 - sync_metadata
-- notification_rules
 - meal_preferences
 - recommendation_history
 - ai_insights

@@ -22,6 +22,7 @@ import 'package:daily_life/features/study/study_session_detail_screen.dart';
 import 'package:daily_life/features/finance/finance_screen.dart';
 import 'package:daily_life/features/nutrition/nutrition_screen.dart';
 import 'package:daily_life/features/habits/habits_screen.dart';
+import 'package:daily_life/features/reminders/reminders_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -30,6 +31,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/today',
         builder: (context, state) => const DashboardScreen(),
+      ),
+      GoRoute(
+        path: '/reminders',
+        builder: (context, state) => const RemindersScreen(),
       ),
       GoRoute(
         path: '/calendar',

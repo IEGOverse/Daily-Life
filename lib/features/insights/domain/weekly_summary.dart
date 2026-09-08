@@ -53,6 +53,9 @@ class WeeklySummary {
 
   double get balanceChange => income - expense;
 
+  /// Average score, or 0 when no scored days exist.
+  double get avgScoreOrZero => scoredDays == 0 ? 0 : averageScore.toDouble();
+
   static final WeeklySummary empty = WeeklySummary(
     start: DateTime(2000),
     end: DateTime(2000),

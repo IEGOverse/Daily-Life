@@ -58,6 +58,26 @@ class NutritionRepository {
 
   Future<void> deleteMeal(String id) => _database.deleteMeal(id);
 
+  /// IDs of foods eaten within the last [days] days (used for variety-aware
+  /// suggestions). Derived from existing meal records, never stored.
+  Future<Set<String>> recentFoodIds({
+    required DateTime now,
+    int days = 4,
+  }) async {
+    final start = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).subtract(Duration(days: days - 1));
+    final meals = await _database.getMealsForRange(start, now);
+    final ids = <String>{};
+    for (final meal in meals) {
+      final foods = await _database.getMealFoods(meal.id);
+      ids.addAll(foods.map((f) => f.foodId));
+    }
+    return ids;
+  }
+
   /// Adds a food serving to a meal.
   Future<void> addMealFood(MealFood mealFood) => _database.insertMealFood(
     db.MealFood(

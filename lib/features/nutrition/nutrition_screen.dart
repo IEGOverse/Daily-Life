@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'domain/food.dart';
 import 'domain/meal.dart';
 import 'domain/meal_food.dart';
+import 'domain/meal_suggestion.dart';
 import 'nutrition_providers.dart';
 
 class NutritionScreen extends ConsumerWidget {
@@ -14,6 +15,7 @@ class NutritionScreen extends ConsumerWidget {
     final now = DateTime.now();
     final day = DateTime(now.year, now.month, now.day);
     final summary = ref.watch(dailyNutritionProvider(day));
+    final suggestions = ref.watch(mealSuggestionsProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Nutrition')),
@@ -45,6 +47,8 @@ class NutritionScreen extends ConsumerWidget {
                     ref.invalidate(dailyNutritionProvider(day));
                   },
                 ),
+            const SizedBox(height: 16),
+            _MealSuggestionsCard(suggestions: suggestions),
             const SizedBox(height: 16),
             Text(
               'Nutrition values are estimates, not medical-grade measurements.',
@@ -216,6 +220,88 @@ class _MealCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _MealSuggestionsCard extends StatelessWidget {
+  const _MealSuggestionsCard({required this.suggestions});
+
+  final AsyncValue<List<MealSuggestion>> suggestions;
+
+  @override
+  Widget build(BuildContext context) {
+    return suggestions.when(
+      loading: () => const SizedBox(
+        height: 120,
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (_, _) => const SizedBox.shrink(),
+      data: (list) {
+        if (list.isEmpty) return const SizedBox.shrink();
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Meal ideas',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const Icon(Icons.lightbulb_outline, size: 18),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Generated locally from your foods — estimates, not medical advice.',
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: Theme.of(context).hintColor),
+                ),
+                const SizedBox(height: 12),
+                for (final s in list) ...[
+                  _SuggestionTile(suggestion: s),
+                  if (s != list.last) const SizedBox(height: 8),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SuggestionTile extends StatelessWidget {
+  const _SuggestionTile({required this.suggestion});
+
+  final MealSuggestion suggestion;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          suggestion.mealType,
+          style: Theme.of(context).textTheme.titleSmall
+              ?.copyWith(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          suggestion.foods.map((f) => f.name).join(' + '),
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+        const SizedBox(height: 2),
+        Text(
+          suggestion.reason,
+          style: Theme.of(context).textTheme.bodySmall
+              ?.copyWith(color: Theme.of(context).hintColor),
+        ),
+      ],
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:drift/native.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:daily_life/core/database/database.dart' as db;
@@ -6,6 +7,8 @@ import 'package:daily_life/core/database/database_provider.dart';
 import 'package:daily_life/core/router/app_router.dart';
 import 'package:daily_life/features/insights/data/insights_repository.dart';
 import 'package:daily_life/features/insights/domain/daily_score.dart';
+import 'package:daily_life/features/insights/domain/insight_generator.dart';
+import 'package:daily_life/features/insights/domain/weekly_summary.dart';
 import 'package:daily_life/main.dart';
 
 void main() {
@@ -392,6 +395,87 @@ void main() {
     });
   });
 
+  group('InsightGenerator', () {
+    const generator = InsightGenerator();
+
+    WeeklySummary summary({
+      int planned = 4,
+      int completed = 3,
+      double study = 120,
+      int workouts = 2,
+      int habitCompletions = 5,
+      double income = 0,
+      int averageScore = 80,
+      int scoredDays = 7,
+    }) => WeeklySummary(
+      start: DateTime(2026, 9, 1),
+      end: DateTime(2026, 9, 8),
+      plannedActivities: planned,
+      completedActivities: completed,
+      studySessions: study > 0 ? 2 : 0,
+      studyMinutes: study,
+      workouts: workouts,
+      workoutMinutes: workouts * 30.0,
+      mealCount: 10,
+      income: income,
+      expense: 0,
+      habitCompletions: habitCompletions,
+      habitLogDays: habitCompletions + 1,
+      averageScore: averageScore,
+      scoredDays: scoredDays,
+    );
+
+    test('emits nothing without current-week data', () {
+      final insights = generator.generate(WeeklySummary.empty, summary());
+      expect(insights, isEmpty);
+    });
+
+    test('reports increased study time vs last week', () {
+      final rising = generator.generate(
+        summary(study: 120),
+        summary(study: 90),
+      );
+      expect(rising.any((i) => i.title == 'Study time increased'), isTrue);
+    });
+
+    test('reports flat daily score', () {
+      final insights = generator.generate(
+        summary(averageScore: 75),
+        summary(averageScore: 75),
+      );
+      expect(insights.any((i) => i.title == 'Daily score is steady'), isTrue);
+    });
+
+    test('reports decreased workouts when activity dropped', () {
+      final insights = generator.generate(
+        summary(workouts: 1),
+        summary(workouts: 3),
+      );
+      expect(insights.any((i) => i.title == 'Workouts decreased'), isTrue);
+    });
+
+    test('includes income trend when present', () {
+      final insights = generator.generate(
+        summary(income: 5000),
+        summary(income: 1000),
+      );
+      expect(insights.any((i) => i.title == 'Income increased'), isTrue);
+      expect(
+        insights.firstWhere((i) => i.title == 'Income increased').detail,
+        contains('Rp'),
+      );
+    });
+
+    test('insights are directional (typed) and explainable', () {
+      final insights = generator.generate(summary(), summary());
+      expect(insights, isNotEmpty);
+      for (final insight in insights) {
+        expect(insight.detail, isNotEmpty);
+        expect(insight.title, isNotEmpty);
+      }
+    });
+  });
+
   group('Insights screen flow', () {
     testWidgets('renders empty state', (tester) async {
       final container = ProviderContainer(
@@ -413,6 +497,13 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Insights'), findsOneWidget);
+
+      final scrollable = find.byType(Scrollable).first;
+      await tester.scrollUntilVisible(
+        find.text('No time recorded this week yet.'),
+        200,
+        scrollable: scrollable,
+      );
       expect(find.text('No time recorded this week yet.'), findsOneWidget);
     });
   });

@@ -8,6 +8,7 @@ import 'package:daily_life/features/nutrition/domain/food.dart';
 import 'package:daily_life/features/nutrition/domain/meal.dart';
 import 'package:daily_life/features/nutrition/domain/meal_food.dart';
 import 'package:daily_life/features/nutrition/data/nutrition_repository.dart';
+import 'package:daily_life/features/nutrition/services/meal_recommendation_engine.dart';
 import 'package:daily_life/main.dart';
 
 void main() {
@@ -150,6 +151,129 @@ void main() {
       await repository.deleteMeal('m1');
 
       expect(await repository.getMeals(day), isEmpty);
+    });
+
+    test('recentFoodIds collects food eaten within the window', () async {
+      final database = db.AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = NutritionRepository(database);
+
+      await repository.insertFood(
+        Food(
+          id: 'f1',
+          name: 'Rice',
+          servingSize: 100,
+          servingUnit: 'g',
+          calories: 130,
+          protein: 2.7,
+          carbohydrate: 28,
+          fat: 0.3,
+        ),
+      );
+      await repository.insertMeal(
+        Meal(
+          id: 'm1',
+          mealType: 'Lunch',
+          date: DateTime(2026, 9, 5),
+          time: DateTime(2026, 9, 5, 12),
+        ),
+      );
+      await repository.addMealFood(
+        MealFood(
+          id: 'mf1',
+          mealId: 'm1',
+          foodId: 'f1',
+          quantity: 100,
+          unit: 'g',
+        ),
+      );
+
+      final now = DateTime(2026, 9, 8, 12);
+      final recent = await repository.recentFoodIds(now: now, days: 4);
+      expect(recent, contains('f1'));
+    });
+  });
+
+  group('MealRecommendationEngine', () {
+    const engine = MealRecommendationEngine();
+
+    List<Food> foods() => [
+      const Food(
+        id: 'f1',
+        name: 'Rice',
+        servingSize: 100,
+        servingUnit: 'g',
+        calories: 130,
+        protein: 2.7,
+        carbohydrate: 28,
+        fat: 0.3,
+      ),
+      const Food(
+        id: 'f2',
+        name: 'Chicken',
+        servingSize: 100,
+        servingUnit: 'g',
+        calories: 190,
+        protein: 25,
+        carbohydrate: 0,
+        fat: 8,
+      ),
+    ];
+
+    test('returns empty without foods', () {
+      final result = engine.recommend(
+        foods: const [],
+        now: DateTime(2026, 9, 8, 12),
+        recentFoodIds: const {},
+      );
+      expect(result, isEmpty);
+    });
+
+    test('recommends foods not eaten recently first', () {
+      final result = engine.recommend(
+        foods: foods(),
+        now: DateTime(2026, 9, 8, 12),
+        recentFoodIds: const {'f1'},
+      );
+      expect(result, isNotEmpty);
+      // f1 was eaten recently, so f2 ranks first.
+      expect(result.first.foods.first.id, 'f2');
+    });
+
+    test('meal type follows the clock', () {
+      expect(
+        engine
+            .recommend(
+              foods: foods(),
+              now: DateTime(2026, 9, 8, 8),
+              recentFoodIds: const {},
+            )
+            .first
+            .mealType,
+        'Breakfast',
+      );
+      expect(
+        engine
+            .recommend(
+              foods: foods(),
+              now: DateTime(2026, 9, 8, 17),
+              recentFoodIds: const {},
+            )
+            .first
+            .mealType,
+        'Dinner',
+      );
+    });
+
+    test('suggestions are capped by limit and reasoned', () {
+      final result = engine.recommend(
+        foods: foods(),
+        now: DateTime(2026, 9, 8, 12),
+        recentFoodIds: const {},
+        limit: 1,
+      );
+      expect(result, hasLength(1));
+      expect(result.first.reason, contains('kcal'));
     });
   });
 

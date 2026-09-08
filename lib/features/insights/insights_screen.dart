@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'domain/daily_score.dart';
+import 'domain/insight_generator.dart';
 import 'domain/time_analytics.dart';
 import 'domain/weekly_summary.dart';
 import 'insights_providers.dart';
@@ -15,6 +16,7 @@ class InsightsScreen extends ConsumerWidget {
     final dailyScore = ref.watch(dailyScoreProvider);
     final weekly = ref.watch(weeklySummaryProvider);
     final time = ref.watch(weeklyTimeProvider);
+    final insights = ref.watch(personalInsightsProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Insights')),
@@ -23,6 +25,7 @@ class InsightsScreen extends ConsumerWidget {
           ref.invalidate(dailyScoreProvider);
           ref.invalidate(weeklySummaryProvider);
           ref.invalidate(weeklyTimeProvider);
+          ref.invalidate(personalInsightsProvider);
           await ref.read(weeklySummaryProvider.future);
         },
         child: ListView(
@@ -31,6 +34,8 @@ class InsightsScreen extends ConsumerWidget {
             _ScoreCard(score: dailyScore),
             const SizedBox(height: 16),
             _WeeklySummaryCard(summary: weekly),
+            const SizedBox(height: 16),
+            _PersonalInsightsCard(insights: insights),
             const SizedBox(height: 16),
             _TimeDistributionCard(time: time),
             const SizedBox(height: 16),
@@ -234,6 +239,95 @@ class _WeeklySummaryCard extends StatelessWidget {
       if (rem > 0 && rem % 3 == 0) buf.write('.');
     }
     return 'Rp $buf';
+  }
+}
+
+class _PersonalInsightsCard extends StatelessWidget {
+  const _PersonalInsightsCard({required this.insights});
+
+  final AsyncValue<List<PersonalInsight>> insights;
+
+  @override
+  Widget build(BuildContext context) {
+    return insights.when(
+      loading: () => const SizedBox(
+        height: 120,
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (_, _) => const SizedBox.shrink(),
+      data: (list) {
+        if (list.isEmpty) return const SizedBox.shrink();
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Personal insights',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Generated locally from your records — nothing leaves this device.',
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: Theme.of(context).hintColor),
+                ),
+                const SizedBox(height: 12),
+                for (final insight in list) ...[
+                  _InsightRow(insight: insight),
+                  if (insight != list.last) const Divider(height: 16),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _InsightRow extends StatelessWidget {
+  const _InsightRow({required this.insight});
+
+  final PersonalInsight insight;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = switch (insight.direction) {
+      TrendDirection.up => Colors.teal,
+      TrendDirection.down => Colors.orange,
+      TrendDirection.flat => Theme.of(context).colorScheme.primary,
+    };
+    final icon = switch (insight.direction) {
+      TrendDirection.up => Icons.trending_up,
+      TrendDirection.down => Icons.trending_down,
+      TrendDirection.flat => Icons.trending_flat,
+    };
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 20, color: color),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                insight.title,
+                style: Theme.of(context).textTheme.titleSmall
+                    ?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                insight.detail,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }
 

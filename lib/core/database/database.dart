@@ -20,6 +20,7 @@ part 'database.g.dart';
     Foods,
     Meals,
     MealFoods,
+    NotificationRules,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -27,7 +28,7 @@ class AppDatabase extends _$AppDatabase {
     : super(executor ?? driftDatabase(name: 'daily_life'));
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -42,6 +43,10 @@ class AppDatabase extends _$AppDatabase {
           await m.deleteTable(table.actualTableName);
         }
         await m.createAll();
+      } else if (from < 3) {
+        // v3 adds the notification_rules table (PRD §13 — configurable
+        // local reminders). Additive only; no existing data is touched.
+        await m.createTable(notificationRules);
       }
     },
   );
@@ -423,6 +428,30 @@ class AppDatabase extends _$AppDatabase {
   Future<void> deleteHabitLog(String id) =>
       (delete(habitLogs)..where((t) => t.id.equals(id))).go();
 
+  // --- Notification rules ---------------------------------------------------
+  Future<List<NotificationRule>> getAllNotificationRules() =>
+      select(notificationRules).get();
+  Future<NotificationRule?> getNotificationRule(String ruleId) => (select(
+    notificationRules,
+  )..where((t) => t.ruleId.equals(ruleId))).getSingleOrNull();
+  Future<void> upsertNotificationRule(
+    String ruleId,
+    NotificationRulesCompanion values,
+  ) async {
+    final existing = await getNotificationRule(ruleId);
+    if (existing == null) {
+      await into(notificationRules).insert(
+        values.copyWith(
+          ruleId: Value(ruleId),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
+    } else {
+      await (notificationRules.update()..where((t) => t.ruleId.equals(ruleId)))
+          .write(values.copyWith(updatedAt: Value(DateTime.now())));
+    }
+  }
+
   DateTime _localStartOfDay(DateTime day) =>
       DateTime(day.year, day.month, day.day).toUtc();
 }
@@ -614,4 +643,26 @@ class MealFoods extends Table {
 
   @override
   Set<Column> get primaryKey => {id};
+}
+
+/// Local notification-rule settings (PRD §13 — reminders must be
+/// configurable). Each row is a named rule; the values here only configure
+/// the local notification service and never leave the device.
+class NotificationRules extends Table {
+  /// Stable rule id, e.g. 'activity', 'habit', 'finance'.
+  TextColumn get ruleId => text()();
+
+  /// Whether this reminder type is enabled.
+  IntColumn get enabled => integer().withDefault(Constant(1))();
+
+  /// Lead time in minutes before a scheduled activity (activity rule).
+  IntColumn get minutesBefore => integer().withDefault(Constant(15))();
+
+  /// Local time "HH:mm" for fixed daily reminders (habit/finance rules).
+  TextColumn get timeOfDay => text().nullable()();
+
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {ruleId};
 }

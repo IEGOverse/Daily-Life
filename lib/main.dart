@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'features/reminders/reminders_providers.dart';
 import 'features/schedule/schedule_providers.dart';
 
 void main() {
@@ -18,6 +19,9 @@ class DailyLifeApp extends ConsumerWidget {
 
     // Trigger initial schedule seeding + week activity generation once.
     useSeeding(ref);
+
+    // Schedule local reminders for today once the week's activities exist.
+    useReminders(ref);
 
     return MaterialApp.router(
       title: 'Activus',

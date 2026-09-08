@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:daily_life/core/database/database.dart';
@@ -14,8 +15,23 @@ void main() {
   });
 
   group('AppDatabase schema', () {
-    test('schema version is 2', () {
-      expect(db.schemaVersion, 2);
+    test('schema version is 3', () {
+      expect(db.schemaVersion, 3);
+    });
+
+    test('notification rules table persists entries', () async {
+      await db.upsertNotificationRule(
+        'activity',
+        NotificationRulesCompanion(
+          enabled: const Value(1),
+          minutesBefore: const Value(15),
+          timeOfDay: const Value(null),
+        ),
+      );
+      final rows = await db.getAllNotificationRules();
+      expect(rows, hasLength(1));
+      expect(rows.first.ruleId, 'activity');
+      expect(rows.first.minutesBefore, 15);
     });
   });
 

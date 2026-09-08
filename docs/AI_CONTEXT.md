@@ -1,51 +1,61 @@
 # Daily Life — AI Context Summary
 
-**Purpose**: Personal-first mobile app (Flutter/Dart) helping one user plan, record, and analyze daily life.
+**Purpose**: Personal-first mobile app (Flutter/Dart) helping one user plan, record, and analyze daily life (Activus; package `daily_life`).
 
 **Architecture**:
 - Flutter 3.47.2 / Dart 3.13.2
 - Riverpod 2.6.1 for state management
 - GoRouter for navigation
 - Drift 2.34.4 for SQLite (code-generated)
+- flutter_local_notifications ^22.3.0 / timezone ^0.11.1 / flutter_timezone ^5.1.0
 - Feature-based project structure under `lib/features/`
 
-**Current Phase**: Phase 3 — Study  
-**Current Sprint**: Sprint 3 — Study (COMPLETE - Task 1 done)  
-**Status**: All Phase 3 Task 1 (Study sessions CRUD) implemented and validated. Phase 3 Tasks 2-5 all COMPLETE.
+**Current Phase**: Phase 7 — Smart Features (IMPLEMENTED + VALIDATED; checkpoint commit in progress)
+**Current Sprint**: Sprint 7 — Smart Features (IN PROGRESS)
+**Status**: Notifications + meal recommendations + local personal insights implemented; 130 tests pass; `flutter build bundle` and `flutter build apk --debug` exit 0; docs updated.
 
 **Completed Milestones**:
-- Sprint 1 (Phase 1 — Daily Core): 6/6 tasks APPROVED after 2 CHANGES_REQUIRED rounds. 53 tests pass, `flutter build bundle` exit 0.
-- Sprint 2 (Phase 2 — Workout): 5/5 tasks completed and pushed. Exercise library, workout plans, sessions, set logging, history all delivered.
-- Sprint 3 (Phase 3 — Study): Task 1 — Study sessions CRUD implemented. Repository supports insert, update, delete via `StudySession` entity. Task 2 — Topics implemented. Repository supports `getAll`, `byId`, `insert`, `update`, `delete` via Drift entity constructors. Task 3 — Notes implemented. Notes field added to StudySession model and CRUD via StudySessionRepository. Task 4 — History implemented. Study history screen with filtering and chronological list. Task 5 — Basic study statistics implemented. getStatistics() method returns totalSessions, totalMinutes, averageUnderstanding, studyDays.
-- Database schema v2: nullable fields + FKs per `docs/DATABASE.md`; UTC-normalized local-day boundaries.
+- Sprint 1 (Phase 1 — Daily Core): 6/6 tasks. Dashboard, recurring schedule, activity model, completion, calendar/history, add activity.
+- Sprint 2 (Phase 2 — Workout): Exercise library, plans, sessions, set logging, history.
+- Sprint 3 (Phase 3 — Study): Sessions, topics, notes, history, statistics.
+- Phase 4 (Finance): income/expense, categories, derived balance, history, stats.
+- Phase 5 (Nutrition): foods, meals, portion-driven derived daily summary, add-meal flow.
+- Phase 6 (Habits & Analytics): habits, streaks, transparent Daily Score, time analytics, cross-module insights dashboard.
+- Phase 7 (Smart Features — this session):
+  - Notifications: DB schema v3 `notification_rules` (additive migration), `ReminderScheduler` pure `buildReminders` (activity N-min lead + daily habit/finance), `NotificationService`, `/reminders` screen, dashboard link, Android manifest permissions/receivers, core-library desugaring in app build.gradle.kts.
+  - Meal recommendations: local `MealRecommendationEngine` (clock-based meal type, recent-food variety ranking, soft kcal estimate), suggestions card on Nutrition screen (labeled estimates, not medical advice).
+  - Personal insights: `InsightGenerator` comparing current vs previous `WeeklySummary` (study/workouts/tasks/habits/score/income; typed directions; explainable). "Generated locally — nothing leaves this device."
 
-**Current Task**: Phase 3 complete - all 5 tasks finished.
+**Database schema**: v3 (added `notification_rules`).
+
+**Current Task**: Phase 7 complete; create checkpoint commit and push, then next roadmap checkpoint (Phase 8 — Portfolio/Production).
 
 **Important Architectural Decisions**:
 - Write-side builds local `DateTime` then `.toUtc()` to preserve wall-clock (Drift reader returns local).
 - Single-flight seed lock prevents concurrent first-launch inserts.
 - Riverpod `overrideWithValue` works only on providers; `ref.invalidate(family)` invalidates all instances.
 - No `uuid`/`intl` packages; IDs generated with timestamps + slugs.
-- `StudySession` entity stored directly; `update()` delegates to `insert()` with `onConflictReplace`.
+- Daily Score is a transparent indicator: `score = round(taskScore×50 + habitScore×50)`; never a judgment or based on body/calories (DATABASE.md §4).
+- All insights/recommendations/reminders computed LOCALLY; no external AI or cloud services (PRD §14–§15).
+- NotificationService guards all platform calls off-Android (tests/no-op hosts).
 
 **Important Constraints**:
 - Offline-first behavior for core personal data.
-- Supabase/cloud sync intentionally deferred.
-- AI features intentionally deferred.
-- Flutter/Dart SDK compatibility note: `flutter test` passes with +4 framework errors (not code-level).
+- No paid external AI; errors are honest/no busy paths; Supabase/cloud sync deferred.
 
-**Latest Checkpoint**: Commit `1023120 feat(workout): add workout history` (Phase 2 complete), plus full Study Phase 3 implementation (Tasks 1-5: Sessions, Topics, Notes, History, Statistics).
+**Latest Checkpoint**: Phase 7 implementation complete; commit + push pending.
 
 **Validation Status**:
 - `dart analyze lib/ test/`: No issues found
 - `dart format --output=none lib test`: clean
-- `flutter test`: 79 tests pass (53 Sprint 1 + 26 Phase 2-3 + all Phase 3 Study)
+- `flutter test`: 130 tests pass (added Phase 7 reminders/recommendations/insights tests)
 - `flutter build bundle`: exit 0
+- `flutter build apk --debug`: exit 0
 
 **Known Blockers / Debt**:
-- Study session CRUD verified with end-to-end tests (79 tests pass).
+- Plain `flutter test` may print Flutter framework warnings; all code-level tests pass.
 - Recurrence/occurrence strategy not finalized (Phase 3+).
-- Recurrence/occurrence strategy not finalized (Phase 3+). All other Phase 3 tasks complete.
+- `flutter_timezone` plugin applies KGP (build warning only; future Flutter may require upgrade).
 
 **Instructions for Resuming Work**:
 1. Read `docs/AI_CONTEXT.md` first.
