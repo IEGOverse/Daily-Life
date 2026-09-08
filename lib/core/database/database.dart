@@ -246,6 +246,16 @@ class AppDatabase extends _$AppDatabase {
   );
 
   // --- Transactions -------------------------------------------------------
+  Future<List<Transaction>> getAllTransactions() =>
+      (select(transactions)..orderBy([(t) => OrderingTerm.desc(t.date)])).get();
+  Future<Transaction?> getTransactionById(String id) =>
+      (select(transactions)..where((t) => t.id.equals(id))).getSingleOrNull();
+  Future<void> insertTransaction(Transaction transaction) =>
+      into(transactions).insert(transaction);
+  Future<void> updateTransaction(String id, TransactionsCompanion values) =>
+      (transactions.update()..where((t) => t.id.equals(id))).write(values);
+  Future<void> deleteTransaction(String id) =>
+      (delete(transactions)..where((t) => t.id.equals(id))).go();
   Future<List<Transaction>> getTransactionsForDay(DateTime day) async {
     final start = _localStartOfDay(day);
     final end = _localStartOfDay(day.add(const Duration(days: 1)));
@@ -272,9 +282,6 @@ class AppDatabase extends _$AppDatabase {
           ..orderBy([(t) => OrderingTerm.desc(t.date)]))
         .get();
   }
-
-  Future<void> insertTransaction(Transaction transaction) =>
-      into(transactions).insert(transaction);
 
   DateTime _localStartOfDay(DateTime day) =>
       DateTime(day.year, day.month, day.day).toUtc();

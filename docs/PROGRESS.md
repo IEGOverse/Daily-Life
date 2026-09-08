@@ -4,10 +4,10 @@
 > The repository, Git history, and this file are authoritative. Do not rely on previous chat memory.
 
 ## Current Phase
-Phase 3 — Study
+Phase 5 — Nutrition (next up)
 
 ## Current Sprint
-Sprint 3 — Study (IN PROGRESS)
+Sprint 4 — Finance (COMPLETE)
 
 ## Overall Status
 IN PROGRESS
@@ -60,12 +60,27 @@ IN PROGRESS
 ## Verification Results
 - `dart analyze lib/ test/`: No issues found
 - `dart format --output=none lib test`: clean
-- `flutter test`: 79 tests pass (53 Sprint 1 + 26 Phase 2-3)
+- `flutter test`: 86 tests pass (79 prior + 7 Finance)
 - `flutter build bundle`: exit 0
+- `flutter build apk --debug`: exit 0
 - `build_runner`: generates successfully
 
 ## Current Task
-Phase 3 — Study Task 2: Topics. (Task 1 COMPLETE; proceeding to Task 2)
+Phase 5 — Nutrition (next approved phase; pending)
+
+## Phase 4 — Finance Status
+COMPLETE — income/expense transactions, categories, real-time derived balance,
+transaction history, and basic finance statistics delivered and validated.
+
+- Domain model: `Transaction` (type income/expense, category, amount, description, date)
+- Repository: CRUD + derived statistics (balance = SUM(income) - SUM(expense))
+- Database: added `getAllTransactions`, `getTransactionById`, `updateTransaction`,
+  `deleteTransaction` (no schema change; balance never stored)
+- UI: FinanceScreen with balance summary, income/expense totals, transaction
+  history, add/edit dialog (income/expense selector, category, amount, date,
+  description), delete, loading/empty states
+- Tests: insert, retrieve, update, delete, income/expense/balance math (incl.
+  5,000,000 - 1,500,000 = 3,500,000 example), empty state, Finance screen render
 
 ## Phase 2 — Workout Status
 COMPLETE — all five approved tasks delivered and validated.
@@ -79,8 +94,7 @@ COMPLETE — all five approved tasks delivered and validated.
 
 ## Known Issues / Decisions Pending
 - Recurrence/occurrence strategy not finalized (Phase 3+).
-- Phase 3 Tasks 3-5 (Notes, History, Statistics) not yet started.
-- Flutter SDK compatibility with Dart SDK 3.13.2 (framework-level, not code-level).
+- Finance (Phase 4) complete.
 
 ## Recovery Instructions
 If an agent/session stops unexpectedly:
@@ -92,4 +106,4 @@ If an agent/session stops unexpectedly:
 6. Commit only when the increment is stable.
 
 ## Last Updated
-2026-09-07 Phase 3 Study Task 1 COMPLETE: Study sessions CRUD implemented and validated.
+2026-09-08 Phase 4 Finance complete (income/expense, derived balance, history, stats).
