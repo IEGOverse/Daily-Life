@@ -1,7 +1,7 @@
-# Daily Life — AI Agent Instructions
+# Activus — AI Agent Instructions
 
 ## Project
-Daily Life is a personal-first, production-quality mobile application built with Flutter and Dart. It helps one primary user plan, record, and analyze daily life.
+Activus is a personal-first, production-quality mobile application built with Flutter and Dart. It helps one primary user plan, record, and analyze daily life.
 
 Core modules:
 - Schedule

@@ -4,7 +4,7 @@ import 'package:daily_life/core/database/database_provider.dart';
 import 'package:daily_life/main.dart';
 
 void main() {
-  testWidgets('Daily Life app launches', (WidgetTester tester) async {
+  testWidgets('Activus app launches', (WidgetTester tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [inMemoryDatabaseOverride()],

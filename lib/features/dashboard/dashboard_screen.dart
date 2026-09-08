@@ -43,7 +43,7 @@ class DashboardScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Daily Life'),
+        title: const Text('Activus'),
         actions: [
           IconButton(icon: const Icon(Icons.settings), onPressed: () {}),
         ],

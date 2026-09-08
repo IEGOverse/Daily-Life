@@ -1,4 +1,10 @@
-# Daily Life — UI/UX Specification v0.1
+ACTIVUS
+Personal Life Operating System
+
+Design philosophy:
+PLAN → DO → RECORD → ANALYZE → IMPROVE
+
+# Activus — UI/UX Specification v0.1
 
 ## Design Direction
 Minimalist, modern, calm, cozy, data-driven.

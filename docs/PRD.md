@@ -1,4 +1,4 @@
-# Daily Life — Product Requirements Document
+# Activus — Product Requirements Document
 
 ## 1. Product Vision
 Daily Life is a personal life management application that helps the user plan, execute, record, and understand daily activities in one place.

@@ -20,7 +20,7 @@ class DailyLifeApp extends ConsumerWidget {
     useSeeding(ref);
 
     return MaterialApp.router(
-      title: 'Daily Life',
+      title: 'Activus',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       routerConfig: router,
