@@ -38,11 +38,11 @@ void main() {
 
       // The selected day's activity list is below the grid; scroll to it.
       await tester.scrollUntilVisible(
-        find.text('No activities for this day.'),
+        find.text('Tidak ada aktivitas untuk hari ini.'),
         100,
         scrollable: find.byType(Scrollable).first,
       );
-      expect(find.text('No activities for this day.'), findsOneWidget);
+      expect(find.text('Tidak ada aktivitas untuk hari ini.'), findsOneWidget);
     });
 
     testWidgets('shows day activities and marks completion via Done', (

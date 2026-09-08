@@ -12,18 +12,18 @@ class StudyScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final sessions = ref.watch(studySessionsProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Study')),
+      appBar: AppBar(title: const Text('Belajar')),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/study/add'),
         icon: const Icon(Icons.add),
-        label: const Text('Study session'),
+        label: const Text('Sesi belajar'),
       ),
       body: sessions.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) =>
-            const Center(child: Text('Failed to load study sessions.')),
+            const Center(child: Text('Gagal memuat sesi belajar.')),
         data: (items) => items.isEmpty
-            ? const Center(child: Text('No study sessions yet.'))
+            ? const Center(child: Text('Belum ada sesi belajar.'))
             : ListView.builder(
                 padding: const EdgeInsets.fromLTRB(12, 12, 12, 96),
                 itemCount: items.length,
@@ -45,5 +45,5 @@ class StudyScreen extends ConsumerWidget {
   }
 
   static String _subtitle(StudySession session) =>
-      '${session.date.year}-${session.date.month.toString().padLeft(2, '0')}-${session.date.day.toString().padLeft(2, '0')} • ${session.durationSeconds == null ? 'Open session' : '${session.durationSeconds! ~/ 60} min'}';
+      '${session.date.year}-${session.date.month.toString().padLeft(2, '0')}-${session.date.day.toString().padLeft(2, '0')} • ${session.durationSeconds == null ? 'Sesi terbuka' : '${session.durationSeconds! ~/ 60} mnt'}';
 }

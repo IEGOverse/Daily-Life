@@ -26,6 +26,7 @@ import 'package:daily_life/features/finance/finance_screen.dart';
 import 'package:daily_life/features/nutrition/nutrition_screen.dart';
 import 'package:daily_life/features/habits/habits_screen.dart';
 import 'package:daily_life/features/reminders/reminders_screen.dart';
+import 'package:daily_life/features/profile/profile_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _todayNavigatorKey = GlobalKey<NavigatorState>();
@@ -88,6 +89,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/reminders',
         builder: (context, state) => const RemindersScreen(),
+      ),
+      GoRoute(
+        path: '/profile',
+        builder: (context, state) => const ProfileScreen(),
       ),
       GoRoute(
         path: '/calendar',

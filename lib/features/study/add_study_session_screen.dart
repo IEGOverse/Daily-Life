@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'domain/study_session.dart';
 import 'study_providers.dart';
 
+import '../dashboard/dashboard_providers.dart';
+
 class AddStudySessionScreen extends ConsumerStatefulWidget {
   final String? sessionId;
 
@@ -29,8 +31,8 @@ class _AddStudySessionScreenState extends ConsumerState<AddStudySessionScreen> {
   @override
   void initState() {
     super.initState();
-    final now = TimeOfDay.now();
-    _start = now;
+    final now = ref.read(clockProvider);
+    _start = TimeOfDay.fromDateTime(now);
     _end = TimeOfDay(hour: (now.hour + 1) % 24, minute: now.minute);
   }
 
@@ -50,7 +52,9 @@ class _AddStudySessionScreenState extends ConsumerState<AddStudySessionScreen> {
     final end = _combine(_end);
     if (!end.isAfter(start)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('End time must be after start time.')),
+        const SnackBar(
+          content: Text('Waktu selesai harus setelah waktu mulai.'),
+        ),
       );
       return;
     }
@@ -80,7 +84,7 @@ class _AddStudySessionScreenState extends ConsumerState<AddStudySessionScreen> {
     } on Object {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not save study session.')),
+          const SnackBar(content: Text('Gagal menyimpan sesi belajar.')),
         );
       }
     } finally {
@@ -98,12 +102,12 @@ class _AddStudySessionScreenState extends ConsumerState<AddStudySessionScreen> {
         loading: () =>
             const Scaffold(body: Center(child: CircularProgressIndicator())),
         error: (error, stack) => const Scaffold(
-          body: Center(child: Text('Failed to load study session.')),
+          body: Center(child: Text('Gagal memuat sesi belajar.')),
         ),
         data: (session) {
           if (session == null) {
             return const Scaffold(
-              body: Center(child: Text('Study session not found.')),
+              body: Center(child: Text('Sesi belajar tidak ditemukan.')),
             );
           }
           _populate(session);
@@ -129,7 +133,9 @@ class _AddStudySessionScreenState extends ConsumerState<AddStudySessionScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          widget.sessionId == null ? 'Add study session' : 'Edit study session',
+          widget.sessionId == null
+              ? 'Tambah Sesi Belajar'
+              : 'Edit Sesi Belajar',
         ),
       ),
       bottomNavigationBar: SafeArea(
@@ -142,7 +148,7 @@ class _AddStudySessionScreenState extends ConsumerState<AddStudySessionScreen> {
                   height: 20,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Text('Save session'),
+              : const Text('Simpan Sesi'),
         ),
       ),
       body: Form(
@@ -153,37 +159,37 @@ class _AddStudySessionScreenState extends ConsumerState<AddStudySessionScreen> {
             TextFormField(
               controller: _subjectController,
               decoration: const InputDecoration(
-                labelText: 'Subject',
+                labelText: 'Mata Pelajaran',
                 border: OutlineInputBorder(),
               ),
               validator: (value) => value == null || value.trim().isEmpty
-                  ? 'Enter a subject.'
+                  ? 'Masukkan mata pelajaran.'
                   : null,
             ),
             const SizedBox(height: 16),
             ListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Date'),
+              title: const Text('Tanggal'),
               subtitle: Text('${_date.year}-${_date.month}-${_date.day}'),
               trailing: const Icon(Icons.calendar_today),
               onTap: _pickDate,
             ),
             ListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Start time'),
-              subtitle: Text(_start.format(context)),
+              title: const Text('Waktu mulai'),
+              subtitle: Text(_formatTimeOfDay(_start)),
               onTap: () => _pickTime(true),
             ),
             ListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('End time'),
-              subtitle: Text(_end.format(context)),
+              title: const Text('Waktu selesai'),
+              subtitle: Text(_formatTimeOfDay(_end)),
               onTap: () => _pickTime(false),
             ),
             DropdownButtonFormField<int>(
               initialValue: _understanding,
               decoration: const InputDecoration(
-                labelText: 'Understanding (optional)',
+                labelText: 'Pemahaman (opsional)',
                 border: OutlineInputBorder(),
               ),
               items: [
@@ -197,7 +203,7 @@ class _AddStudySessionScreenState extends ConsumerState<AddStudySessionScreen> {
               controller: _notesController,
               maxLines: 5,
               decoration: const InputDecoration(
-                labelText: 'Notes (optional)',
+                labelText: 'Catatan (opsional)',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -226,4 +232,10 @@ class _AddStudySessionScreenState extends ConsumerState<AddStudySessionScreen> {
       setState(() => start ? _start = selected : _end = selected);
     }
   }
+}
+
+String _formatTimeOfDay(TimeOfDay t) {
+  final hour = t.hour.toString().padLeft(2, '0');
+  final minute = t.minute.toString().padLeft(2, '0');
+  return '$hour:$minute';
 }

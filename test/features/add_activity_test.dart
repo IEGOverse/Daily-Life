@@ -18,21 +18,21 @@ void main() {
       await tester.tap(find.byIcon(Icons.add));
       await tester.pumpAndSettle();
 
-      expect(find.text('Add Activity'), findsOneWidget);
+      expect(find.text('Tambah Aktivitas'), findsOneWidget);
 
       // Fill in the form (keep the default category).
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'Title'),
+        find.widgetWithText(TextFormField, 'Judul'),
         'Coffee with team',
       );
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'Notes (optional)'),
+        find.widgetWithText(TextFormField, 'Catatan (opsional)'),
         'quarterly sync',
       );
       await tester.pumpAndSettle();
 
       // Save.
-      await tester.tap(find.text('Save Activity'));
+      await tester.tap(find.text('Simpan Aktivitas'));
       await tester.pumpAndSettle();
 
       // Back on the dashboard.
@@ -59,10 +59,10 @@ void main() {
       await tester.pumpAndSettle();
 
       // Title is empty -> Save is rejected.
-      await tester.tap(find.text('Save Activity'));
+      await tester.tap(find.text('Simpan Aktivitas'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Enter a title'), findsOneWidget);
+      expect(find.text('Masukkan judul'), findsOneWidget);
 
       final rows = await database.getActivitiesForDay(DateTime(2026, 9, 8));
       // Only the seeded schedule activities exist (no manual insert happened).

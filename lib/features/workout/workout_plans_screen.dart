@@ -12,10 +12,10 @@ class WorkoutPlansScreen extends ConsumerWidget {
     final plans = ref.watch(workoutPlansProvider);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Workout plans'),
+        title: const Text('Rencana Olahraga'),
         actions: [
           IconButton(
-            tooltip: 'Session history',
+            tooltip: 'Riwayat sesi',
             icon: const Icon(Icons.history),
             onPressed: () => context.push('/workout/sessions'),
           ),
@@ -24,16 +24,18 @@ class WorkoutPlansScreen extends ConsumerWidget {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/workout/plans/add'),
         icon: const Icon(Icons.add),
-        label: const Text('New plan'),
+        label: const Text('Rencana Baru'),
       ),
       body: plans.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) =>
-            const Center(child: Text('Failed to load workout plans.')),
+            const Center(child: Text('Gagal memuat rencana olahraga.')),
         data: (items) {
           if (items.isEmpty) {
             return const Center(
-              child: Text('No workout plans yet. Create one to get started.'),
+              child: Text(
+                'Belum ada rencana olahraga. Buat satu untuk memulai.',
+              ),
             );
           }
           return ListView.builder(
@@ -47,7 +49,7 @@ class WorkoutPlansScreen extends ConsumerWidget {
                     child: Icon(Icons.view_list_outlined),
                   ),
                   title: Text(plan.name),
-                  subtitle: Text(plan.dayLabel ?? 'Flexible schedule'),
+                  subtitle: Text(plan.dayLabel ?? 'Jadwal fleksibel'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => context.push('/workout/plans/${plan.id}'),
                 ),

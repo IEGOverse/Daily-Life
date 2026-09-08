@@ -13,16 +13,16 @@ class WorkoutSessionDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(workoutSessionByIdProvider(sessionId));
     return Scaffold(
-      appBar: AppBar(title: const Text('Workout session')),
+      appBar: AppBar(title: const Text('Sesi Olahraga')),
       body: session.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) =>
-            const Center(child: Text('Failed to load session.')),
+            const Center(child: Text('Gagal memuat sesi.')),
         data: (value) {
           if (value == null) {
-            return const Center(child: Text('Workout session not found.'));
+            return const Center(child: Text('Sesi olahraga tidak ditemukan.'));
           }
-          final status = value.completed ? 'Completed' : 'In progress';
+          final status = value.completed ? 'Selesai' : 'Berlangsung';
           final exercises = ref.watch(
             workoutPlanExercisesProvider(value.workoutPlanId),
           );
@@ -30,32 +30,32 @@ class WorkoutSessionDetailScreen extends ConsumerWidget {
             padding: const EdgeInsets.all(16),
             children: [
               Text(
-                value.plan?.name ?? 'Workout session',
+                value.plan?.name ?? 'Sesi olahraga',
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
               const SizedBox(height: 8),
               Chip(label: Text(status)),
               const SizedBox(height: 16),
-              Text('Started: ${value.startTime}'),
-              if (value.endTime != null) Text('Ended: ${value.endTime}'),
+              Text('Mulai: ${value.startTime}'),
+              if (value.endTime != null) Text('Selesai: ${value.endTime}'),
               if (value.durationSeconds != null)
-                Text('Duration: ${value.durationSeconds} seconds'),
+                Text('Durasi: ${value.durationSeconds} detik'),
               if (value.notes != null) ...[
                 const SizedBox(height: 16),
                 Text(value.notes!),
               ],
               const SizedBox(height: 24),
               Text(
-                'Planned exercises',
+                'Gerakan yang direncanakan',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 8),
               exercises.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (error, stack) =>
-                    const Text('Failed to load planned exercises.'),
+                    const Text('Gagal memuat gerakan yang direncanakan.'),
                 data: (items) => items.isEmpty
-                    ? const Text('No exercises in this plan.')
+                    ? const Text('Tidak ada gerakan dalam rencana ini.')
                     : Column(
                         children: [
                           for (final item in items)
@@ -68,7 +68,7 @@ class WorkoutSessionDetailScreen extends ConsumerWidget {
                                 item.exercise?.name ?? item.exerciseId,
                               ),
                               subtitle: Text(
-                                '${item.sets} sets x ${item.reps} reps',
+                                '${item.sets} set x ${item.reps} repetisi',
                               ),
                             ),
                         ],
@@ -80,7 +80,7 @@ class WorkoutSessionDetailScreen extends ConsumerWidget {
                   onPressed: () =>
                       context.push('/workout/sessions/${value.id}/sets'),
                   icon: const Icon(Icons.edit_note),
-                  label: const Text('Log sets'),
+                  label: const Text('Catat Set'),
                 ),
                 const SizedBox(height: 8),
                 FilledButton.icon(
@@ -93,7 +93,7 @@ class WorkoutSessionDetailScreen extends ConsumerWidget {
                     ref.invalidate(workoutHistoryProvider);
                   },
                   icon: const Icon(Icons.check),
-                  label: const Text('Complete workout'),
+                  label: const Text('Selesaikan Olahraga'),
                 ),
               ],
             ],

@@ -163,7 +163,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Legs'));
+      await tester.tap(find.text('Kaki'));
       await tester.pumpAndSettle();
 
       expect(find.text('Deadlift'), findsOneWidget);
@@ -219,7 +219,7 @@ void main() {
         // Drill into a detail screen and see the instructions.
         await tester.tap(find.text('Bicep Curl'));
         await tester.pumpAndSettle();
-        expect(find.text('Instructions'), findsOneWidget);
+        expect(find.text('Instruksi'), findsOneWidget);
         expect(find.textContaining('shoulders'), findsOneWidget);
         await tester.pageBack();
         await tester.pumpAndSettle();
@@ -227,26 +227,26 @@ void main() {
         // Add a personal exercise.
         await tester.tap(find.byIcon(Icons.add_circle_outline));
         await tester.pumpAndSettle();
-        expect(find.text('Add exercise'), findsOneWidget);
+        expect(find.text('Tambah Gerakan'), findsOneWidget);
 
         await tester.enterText(
-          find.widgetWithText(TextFormField, 'Name'),
+          find.widgetWithText(TextFormField, 'Nama'),
           'Cable Crunch',
         );
         await tester.tap(find.byType(DropdownButtonFormField<String>));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Core').last);
+        await tester.tap(find.text('Inti').last);
         await tester.pumpAndSettle();
         await tester.enterText(
-          find.widgetWithText(TextFormField, 'Instructions (optional)'),
+          find.widgetWithText(TextFormField, 'Instruksi (opsional)'),
           'Kneel at a cable stack and crunch your elbows toward your knees.',
         );
-        await tester.tap(find.text('Save exercise'));
+        await tester.tap(find.text('Simpan Gerakan'));
         await tester.pumpAndSettle();
 
         // Back on the library screen.
-        expect(find.text('Add exercise'), findsNothing);
-        expect(find.text('Workout'), findsOneWidget);
+        expect(find.text('Tambah Gerakan'), findsNothing);
+        expect(find.text('Olahraga'), findsOneWidget);
 
         // Persisted with the selected muscle group.
         final all = await database.getAllExercises();
@@ -290,10 +290,10 @@ void main() {
       container.read(appRouterProvider).go('/workout/add');
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Save exercise'));
+      await tester.tap(find.text('Simpan Gerakan'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Enter an exercise name.'), findsOneWidget);
+      expect(find.text('Masukkan nama gerakan.'), findsOneWidget);
       expect(await database.getAllExercises(), hasLength(15));
     });
   });

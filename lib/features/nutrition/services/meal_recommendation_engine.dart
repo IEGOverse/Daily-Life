@@ -61,10 +61,10 @@ class MealRecommendationEngine {
     final reasonBuffer = StringBuffer(
       recent.contains(head.id)
           ? _varietyReason(head)
-          : 'You have not had ${head.name} recently. ',
+          : 'Anda belum makan ${head.name} baru-baru ini. ',
     );
     reasonBuffer.write(
-      'Roughly ${_estimateCalories(foods).round()} kcal for this ${mealType.toLowerCase()}.',
+      'Kira-kira ${_estimateCalories(foods).round()} kcal untuk ${mealType.toLowerCase()} ini.',
     );
 
     return MealSuggestion(
@@ -74,16 +74,16 @@ class MealRecommendationEngine {
     );
   }
 
-  String _varietyReason(Food food) => 'A change of pace: ${food.name}. ';
+  String _varietyReason(Food food) => 'Selingan yang segar: ${food.name}. ';
 
   double _estimateCalories(List<Food> foods) =>
       foods.fold<double>(0, (sum, f) => sum + f.calories);
 
   String _mealTypeFor(DateTime now) {
     final hour = now.hour;
-    if (hour < 11) return 'Breakfast';
-    if (hour < 15) return 'Lunch';
-    if (hour < 20) return 'Dinner';
-    return 'Snack';
+    if (hour < 11) return 'Sarapan';
+    if (hour < 15) return 'Makan Siang';
+    if (hour < 20) return 'Makan Malam';
+    return 'Camilan';
   }
 }

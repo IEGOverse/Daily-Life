@@ -107,12 +107,23 @@ Show (segmented: Overview / Analytics / Trends):
 
 ## More Screen
 Compact rows grouped in sections:
-- Profile
+- Profile (functional local profile — display name persisted via SharedPreferences, default "Pengguna Activus")
 - Settings (Notifications & reminders)
 - Data & Sync (local only — no cloud)
 - Theme (dark default)
 - Help & Support
 - About Activus (version + privacy note)
+
+## Language & Localization
+- UI copy is Indonesian-first (bottom nav, headers, empty/error states, dialogs,
+  notifications, insights). Brand "Activus" and "APK" stay untranslated.
+- Time is displayed in 24h "HH:mm" format everywhere (UI + notifications); no AM/PM.
+- Domain logic labels use single Indonesian sources (`ActivityStatus.label`,
+  `_frequencyLabel`, `muscleGroupLabelFor`, Indonesian meal types
+  Sarapan/Makan Siang/Makan Malam/Camilan).
+- Seed/data content may keep English by design (schedule seed titles, workout
+  seed instructions, raw UTC timestamps, internal exception messages) — that is
+  sample data, not UI chrome.
 
 ## Reusable Components
 - AppCard (16 px radius, bordered, no elevation)

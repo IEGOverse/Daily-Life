@@ -33,16 +33,14 @@ class _WorkoutSetLoggingScreenState
     };
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Log sets')),
+      appBar: AppBar(title: const Text('Catat Set')),
       body: logs.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) =>
-            const Center(child: Text('Failed to load set logs.')),
+            const Center(child: Text('Gagal memuat catatan set.')),
         data: (items) {
           if (items.isEmpty) {
-            return const Center(
-              child: Text('No prescribed sets for this session.'),
-            );
+            return const Center(child: Text('Tidak ada set untuk sesi ini.'));
           }
           for (final log in items) {
             _drafts.putIfAbsent(log.id, () => _SetDraft.fromLog(log));
@@ -77,7 +75,7 @@ class _WorkoutSetLoggingScreenState
                   height: 20,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Text('Save set logs'),
+              : const Text('Simpan Catatan Set'),
         ),
       ),
     );
@@ -102,7 +100,7 @@ class _WorkoutSetLoggingScreenState
                 initialValue: '${draft.reps}',
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(
-                  labelText: 'Reps',
+                  labelText: 'Repetisi',
                   isDense: true,
                 ),
                 onChanged: (value) => draft.reps = int.tryParse(value) ?? 0,
@@ -116,7 +114,7 @@ class _WorkoutSetLoggingScreenState
                   decimal: true,
                 ),
                 decoration: const InputDecoration(
-                  labelText: 'Weight',
+                  labelText: 'Beban',
                   suffixText: 'kg',
                   isDense: true,
                 ),
@@ -151,8 +149,9 @@ class _WorkoutSetLoggingScreenState
       ref.invalidate(workoutSetLogsProvider(widget.sessionId));
       ref.invalidate(workoutHistoryProvider);
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Set logs saved')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Catatan set tersimpan')));
       }
     } finally {
       if (mounted) setState(() => _saving = false);

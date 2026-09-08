@@ -18,6 +18,17 @@ const List<String> _categories = [
   'personal',
 ];
 
+/// Indonesian display labels for activity categories.
+const Map<String, String> _categoryLabels = {
+  'study': 'Belajar',
+  'workout': 'Olahraga',
+  'work': 'Kerja',
+  'finance': 'Keuangan',
+  'nutrition': 'Nutrisi',
+  'habit': 'Kebiasaan',
+  'personal': 'Pribadi',
+};
+
 /// Form to manually create a one-off activity.
 ///
 /// Minimal fields per PRD "record in as few steps as possible": title,
@@ -133,8 +144,9 @@ class _AddActivityScreenState extends ConsumerState<AddActivityScreen> {
         activitiesForMonthProvider(DateTime(_date.year, _date.month)),
       );
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Activity added')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Aktivitas ditambahkan')));
         context.go('/today');
       }
     } finally {
@@ -157,7 +169,7 @@ class _AddActivityScreenState extends ConsumerState<AddActivityScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Add Activity')),
+      appBar: AppBar(title: const Text('Tambah Aktivitas')),
       body: SafeArea(
         child: Form(
           key: _formKey,
@@ -169,24 +181,27 @@ class _AddActivityScreenState extends ConsumerState<AddActivityScreen> {
                 textCapitalization: TextCapitalization.sentences,
                 autofocus: true,
                 decoration: const InputDecoration(
-                  labelText: 'Title',
-                  hintText: 'e.g. Group study session',
+                  labelText: 'Judul',
+                  hintText: 'mis. Sesi belajar kelompok',
                   border: OutlineInputBorder(),
                 ),
                 validator: (value) => (value == null || value.trim().isEmpty)
-                    ? 'Enter a title'
+                    ? 'Masukkan judul'
                     : null,
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 initialValue: _category,
                 decoration: const InputDecoration(
-                  labelText: 'Category',
+                  labelText: 'Kategori',
                   border: OutlineInputBorder(),
                 ),
                 items: [
                   for (final category in _categories)
-                    DropdownMenuItem(value: category, child: Text(category)),
+                    DropdownMenuItem(
+                      value: category,
+                      child: Text(_categoryLabels[category] ?? category),
+                    ),
                 ],
                 onChanged: (value) {
                   if (value != null) {
@@ -199,7 +214,7 @@ class _AddActivityScreenState extends ConsumerState<AddActivityScreen> {
                 children: [
                   Expanded(
                     child: _DateTile(
-                      label: 'Date',
+                      label: 'Tanggal',
                       value: _formatDate(_date),
                       onTap: _pickDate,
                     ),
@@ -207,7 +222,7 @@ class _AddActivityScreenState extends ConsumerState<AddActivityScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: _TimeTile(
-                      label: 'Start',
+                      label: 'Mulai',
                       value: _formatTimeOfDay(_startTime),
                       onTap: _pickStartTime,
                     ),
@@ -224,7 +239,7 @@ class _AddActivityScreenState extends ConsumerState<AddActivityScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: _TimeTile(
-                      label: 'End (optional)',
+                      label: 'Selesai (opsional)',
                       value: _endTime == null
                           ? '—'
                           : _formatTimeOfDay(_endTime!),
@@ -237,7 +252,7 @@ class _AddActivityScreenState extends ConsumerState<AddActivityScreen> {
               TextFormField(
                 controller: _notesController,
                 decoration: const InputDecoration(
-                  labelText: 'Notes (optional)',
+                  labelText: 'Catatan (opsional)',
                   border: OutlineInputBorder(),
                 ),
                 maxLines: 2,
@@ -249,7 +264,7 @@ class _AddActivityScreenState extends ConsumerState<AddActivityScreen> {
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
-                child: const Text('Save Activity'),
+                child: const Text('Simpan Aktivitas'),
               ),
             ],
           ),
@@ -263,9 +278,9 @@ class _AddActivityScreenState extends ConsumerState<AddActivityScreen> {
   }
 
   String _formatTimeOfDay(TimeOfDay t) {
-    final period = t.hour < 12 ? 'AM' : 'PM';
-    final displayHour = t.hour % 12 == 0 ? 12 : t.hour % 12;
-    return '$displayHour:${t.minute.toString().padLeft(2, '0')} $period';
+    final hour = t.hour.toString().padLeft(2, '0');
+    final minute = t.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
   }
 }
 

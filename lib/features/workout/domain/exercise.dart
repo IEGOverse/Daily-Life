@@ -36,7 +36,17 @@ class Exercise {
     );
   }
 
-  /// Human-readable muscle group label, e.g. "Legs".
-  String get muscleGroupLabel =>
-      muscleGroup[0].toUpperCase() + muscleGroup.substring(1);
+  /// Indonesian muscle group label, e.g. "Kaki".
+  String get muscleGroupLabel => muscleGroupLabelFor(muscleGroup);
 }
+
+/// Maps a muscle group key to its Indonesian label, e.g. "legs" → "Kaki".
+String muscleGroupLabelFor(String group) => switch (group) {
+  'chest' => 'Dada',
+  'back' => 'Punggung',
+  'legs' => 'Kaki',
+  'shoulders' => 'Bahu',
+  'arms' => 'Lengan',
+  'core' => 'Inti',
+  _ => group[0].toUpperCase() + group.substring(1),
+};

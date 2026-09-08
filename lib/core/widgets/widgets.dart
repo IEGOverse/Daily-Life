@@ -338,7 +338,7 @@ class ErrorState extends StatelessWidget {
           Text(message),
           if (onRetry != null) ...[
             const SizedBox(height: 16),
-            AppButton(label: 'Retry', onPressed: onRetry!),
+            AppButton(label: 'Coba Lagi', onPressed: onRetry!),
           ],
         ],
       ),

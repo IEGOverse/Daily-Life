@@ -22,13 +22,13 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
     final transactions = ref.watch(allTransactionsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Finance')),
+      appBar: AppBar(title: const Text('Keuangan')),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: ActivusColors.primaryBlue,
         foregroundColor: Colors.white,
         onPressed: () => _openTransactionDialog(context, ref),
         icon: const Icon(Icons.add),
-        label: const Text('Add transaction'),
+        label: const Text('Tambah transaksi'),
       ),
       body: RefreshIndicator(
         onRefresh: () async => ref.refresh(allTransactionsProvider.future),
@@ -50,7 +50,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              'Recent Transactions',
+              'Transaksi Terakhir',
               style: Theme.of(context).textTheme.titleMedium
                   ?.copyWith(fontWeight: FontWeight.w600),
             ),
@@ -58,7 +58,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
             transactions.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) =>
-                  const Center(child: Text('Failed to load transactions.')),
+                  const Center(child: Text('Gagal memuat transaksi.')),
               data: (items) {
                 final visible = items
                     .where(
@@ -70,7 +70,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                     )
                     .toList();
                 if (visible.isEmpty) {
-                  return const Center(child: Text('No transactions yet.'));
+                  return const Center(child: Text('Belum ada transaksi.'));
                 }
                 return Column(
                   children: [
@@ -123,7 +123,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
     ref.invalidate(financeStatsProvider);
     if (context.mounted) {
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Transaction deleted')));
+          .showSnackBar(const SnackBar(content: Text('Transaksi dihapus')));
     }
   }
 }
@@ -145,19 +145,19 @@ class _SegmentFilter extends StatelessWidget {
       key: const ValueKey('finance-filter'),
       children: [
         _SegmentButton(
-          label: 'All',
+          label: 'Semua',
           isActive: transactionType == _TransactionFilter.all,
           onTap: () => onChanged(_TransactionFilter.all),
         ),
         const SizedBox(width: 8),
         _SegmentButton(
-          label: 'Income',
+          label: 'Pemasukan',
           isActive: transactionType == _TransactionFilter.income,
           onTap: () => onChanged(_TransactionFilter.income),
         ),
         const SizedBox(width: 8),
         _SegmentButton(
-          label: 'Expense',
+          label: 'Pengeluaran',
           isActive: transactionType == _TransactionFilter.expense,
           onTap: () => onChanged(_TransactionFilter.expense),
         ),
@@ -229,7 +229,7 @@ class _BalanceCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Current Balance',
+            'Saldo Saat Ini',
             style: TextStyle(fontSize: 13, color: ActivusColors.textTertiary),
           ),
           const SizedBox(height: 4),
@@ -245,14 +245,14 @@ class _BalanceCard extends StatelessWidget {
           Row(
             children: [
               _IncomeExpenseRow(
-                label: 'Income',
+                label: 'Pemasukan',
                 amount: income,
                 color: ActivusColors.success,
                 icon: Icons.arrow_downward,
               ),
               const SizedBox(width: 12),
               _IncomeExpenseRow(
-                label: 'Expense',
+                label: 'Pengeluaran',
                 amount: expense,
                 color: ActivusColors.danger,
                 icon: Icons.arrow_upward,
@@ -397,20 +397,20 @@ class _TransactionDialog extends StatefulWidget {
 
 class _TransactionDialogState extends State<_TransactionDialog> {
   static const _incomeCategories = [
-    'Salary',
-    'Allowance',
+    'Gaji',
+    'Uang Saku',
     'Bonus',
-    'Investment',
-    'Other Income',
+    'Investasi',
+    'Penghasilan Lain',
   ];
   static const _expenseCategories = [
-    'Food',
-    'Transport',
-    'Shopping',
-    'Bills',
-    'Entertainment',
-    'Health',
-    'Other Expense',
+    'Makanan',
+    'Transportasi',
+    'Belanja',
+    'Tagihan',
+    'Hiburan',
+    'Kesehatan',
+    'Pengeluaran Lain',
   ];
 
   final _amountController = TextEditingController();
@@ -459,8 +459,9 @@ class _TransactionDialogState extends State<_TransactionDialog> {
   Future<void> _submit() async {
     final amount = int.tryParse(_amountController.text.trim());
     if (amount == null || amount <= 0) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Enter a valid amount')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Masukkan nominal yang valid')),
+      );
       return;
     }
     final tx = Transaction(
@@ -483,7 +484,7 @@ class _TransactionDialogState extends State<_TransactionDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text(
-        widget.existing == null ? 'Add transaction' : 'Edit transaction',
+        widget.existing == null ? 'Tambah transaksi' : 'Edit transaksi',
       ),
       content: SingleChildScrollView(
         child: Column(
@@ -491,8 +492,8 @@ class _TransactionDialogState extends State<_TransactionDialog> {
           children: [
             SegmentedButton<String>(
               segments: const [
-                ButtonSegment(value: 'expense', label: Text('Expense')),
-                ButtonSegment(value: 'income', label: Text('Income')),
+                ButtonSegment(value: 'expense', label: Text('Pengeluaran')),
+                ButtonSegment(value: 'income', label: Text('Pemasukan')),
               ],
               selected: {_type},
               onSelectionChanged: (selection) {
@@ -508,7 +509,7 @@ class _TransactionDialogState extends State<_TransactionDialog> {
             DropdownButtonFormField<String>(
               initialValue: _category,
               decoration: const InputDecoration(
-                labelText: 'Category',
+                labelText: 'Kategori',
                 border: OutlineInputBorder(),
               ),
               items: [
@@ -523,7 +524,7 @@ class _TransactionDialogState extends State<_TransactionDialog> {
             TextFormField(
               controller: _amountController,
               decoration: const InputDecoration(
-                labelText: 'Amount (Rp)',
+                labelText: 'Jumlah (Rp)',
                 border: OutlineInputBorder(),
               ),
               keyboardType: const TextInputType.numberWithOptions(
@@ -535,7 +536,7 @@ class _TransactionDialogState extends State<_TransactionDialog> {
               onTap: _pickDate,
               child: InputDecorator(
                 decoration: const InputDecoration(
-                  labelText: 'Date',
+                  labelText: 'Tanggal',
                   border: OutlineInputBorder(),
                 ),
                 child: Text(_formatDate(_date)),
@@ -545,7 +546,7 @@ class _TransactionDialogState extends State<_TransactionDialog> {
             TextFormField(
               controller: _descriptionController,
               decoration: const InputDecoration(
-                labelText: 'Description (optional)',
+                labelText: 'Deskripsi (opsional)',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -555,9 +556,9 @@ class _TransactionDialogState extends State<_TransactionDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: const Text('Batal'),
         ),
-        FilledButton(onPressed: _submit, child: const Text('Save')),
+        FilledButton(onPressed: _submit, child: const Text('Simpan')),
       ],
     );
   }

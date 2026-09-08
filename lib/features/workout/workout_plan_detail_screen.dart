@@ -14,14 +14,16 @@ class WorkoutPlanDetailScreen extends ConsumerWidget {
     final plan = ref.watch(workoutPlanByIdProvider(planId));
     final links = ref.watch(workoutPlanExercisesProvider(planId));
     return Scaffold(
-      appBar: AppBar(title: const Text('Workout plan')),
+      appBar: AppBar(title: const Text('Detail Rencana')),
       body: plan.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) =>
-            const Center(child: Text('Failed to load plan.')),
+            const Center(child: Text('Gagal memuat rencana.')),
         data: (value) {
           if (value == null) {
-            return const Center(child: Text('Workout plan not found.'));
+            return const Center(
+              child: Text('Rencana olahraga tidak ditemukan.'),
+            );
           }
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
@@ -39,14 +41,13 @@ class WorkoutPlanDetailScreen extends ConsumerWidget {
                 Text(value.description!),
               ],
               const SizedBox(height: 24),
-              Text('Exercises', style: Theme.of(context).textTheme.titleLarge),
+              Text('Gerakan', style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 8),
               links.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, stack) =>
-                    const Text('Failed to load exercises.'),
+                error: (error, stack) => const Text('Gagal memuat gerakan.'),
                 data: (items) => items.isEmpty
-                    ? const Text('No exercises in this plan.')
+                    ? const Text('Tidak ada gerakan dalam rencana ini.')
                     : Column(
                         children: [
                           for (final item in items)
@@ -59,8 +60,8 @@ class WorkoutPlanDetailScreen extends ConsumerWidget {
                                   item.exercise?.name ?? item.exerciseId,
                                 ),
                                 subtitle: Text(
-                                  '${item.sets} sets x ${item.reps} reps'
-                                  '${item.restSeconds == null ? '' : '  •  ${item.restSeconds}s rest'}',
+                                  '${item.sets} set x ${item.reps} repetisi'
+                                  '${item.restSeconds == null ? '' : '  •  ${item.restSeconds}d istirahat'}',
                                 ),
                               ),
                             ),
@@ -79,7 +80,7 @@ class WorkoutPlanDetailScreen extends ConsumerWidget {
                   }
                 },
                 icon: const Icon(Icons.play_arrow),
-                label: const Text('Start workout'),
+                label: const Text('Mulai Olahraga'),
               ),
             ],
           );

@@ -12,19 +12,19 @@ class RemindersScreen extends ConsumerWidget {
     final rulesAsync = ref.watch(reminderRulesProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Reminders')),
+      appBar: AppBar(title: const Text('Pengingat')),
       body: rulesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) =>
-            const Center(child: Text('Failed to load reminders.')),
+            const Center(child: Text('Gagal memuat pengingat.')),
         data: (rules) => ListView(
           padding: const EdgeInsets.all(12),
           children: [
             _RuleCard(
               ruleId: ReminderRuleIds.activity,
               icon: Icons.schedule,
-              title: 'Upcoming activities',
-              subtitle: 'Remind before a scheduled activity starts',
+              title: 'Aktivitas mendatang',
+              subtitle: 'Ingatkan sebelum aktivitas terjadwal dimulai',
               enabled: _enabled(rules, ReminderRuleIds.activity),
               onChanged: (value) =>
                   _setEnabled(ref, ReminderRuleIds.activity, value),
@@ -38,8 +38,8 @@ class RemindersScreen extends ConsumerWidget {
             _RuleCard(
               ruleId: ReminderRuleIds.habit,
               icon: Icons.check_circle_outline,
-              title: 'Habit reminders',
-              subtitle: 'Daily reminder to complete your habits',
+              title: 'Pengingat kebiasaan',
+              subtitle: 'Pengingat harian untuk menyelesaikan kebiasaan Anda',
               enabled: _enabled(rules, ReminderRuleIds.habit),
               onChanged: (value) =>
                   _setEnabled(ref, ReminderRuleIds.habit, value),
@@ -52,8 +52,8 @@ class RemindersScreen extends ConsumerWidget {
             _RuleCard(
               ruleId: ReminderRuleIds.finance,
               icon: Icons.account_balance_wallet_outlined,
-              title: 'Finance recording',
-              subtitle: 'Daily reminder to record transactions',
+              title: 'Pencatatan keuangan',
+              subtitle: 'Pengingat harian untuk mencatat transaksi',
               enabled: _enabled(rules, ReminderRuleIds.finance),
               onChanged: (value) =>
                   _setEnabled(ref, ReminderRuleIds.finance, value),
@@ -65,8 +65,8 @@ class RemindersScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'Reminders are scheduled locally on this device and never '
-              'leave it.',
+              'Pengingat dijadwalkan secara lokal di perangkat ini dan '
+              'tidak pernah meninggalkannya.',
               style: Theme.of(context).textTheme.bodySmall
                   ?.copyWith(color: Theme.of(context).hintColor),
             ),
@@ -213,7 +213,7 @@ class _LeadTimeSelektor extends StatelessWidget {
       children: [
         Expanded(
           child: Text(
-            'Remind me',
+            'Ingatkan saya',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
         ),
@@ -221,7 +221,7 @@ class _LeadTimeSelektor extends StatelessWidget {
           value: minutes,
           items: [
             for (final m in const [5, 10, 15, 30, 60])
-              DropdownMenuItem(value: m, child: Text('$m min before')),
+              DropdownMenuItem(value: m, child: Text('$m mnt sebelum')),
           ],
           onChanged: (value) {
             if (value != null) onChanged(value);
@@ -243,7 +243,7 @@ class _TimeSelektor extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: Text('Time', style: Theme.of(context).textTheme.bodyMedium),
+          child: Text('Waktu', style: Theme.of(context).textTheme.bodyMedium),
         ),
         TextButton.icon(
           onPressed: () async {

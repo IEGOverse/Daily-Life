@@ -435,7 +435,7 @@ void main() {
         summary(study: 120),
         summary(study: 90),
       );
-      expect(rising.any((i) => i.title == 'Study time increased'), isTrue);
+      expect(rising.any((i) => i.title == 'Waktu belajar meningkat'), isTrue);
     });
 
     test('reports flat daily score', () {
@@ -443,7 +443,7 @@ void main() {
         summary(averageScore: 75),
         summary(averageScore: 75),
       );
-      expect(insights.any((i) => i.title == 'Daily score is steady'), isTrue);
+      expect(insights.any((i) => i.title == 'Skor harian stabil'), isTrue);
     });
 
     test('reports decreased workouts when activity dropped', () {
@@ -451,7 +451,7 @@ void main() {
         summary(workouts: 1),
         summary(workouts: 3),
       );
-      expect(insights.any((i) => i.title == 'Workouts decreased'), isTrue);
+      expect(insights.any((i) => i.title == 'Olahraga menurun'), isTrue);
     });
 
     test('includes income trend when present', () {
@@ -459,9 +459,9 @@ void main() {
         summary(income: 5000),
         summary(income: 1000),
       );
-      expect(insights.any((i) => i.title == 'Income increased'), isTrue);
+      expect(insights.any((i) => i.title == 'Pemasukan meningkat'), isTrue);
       expect(
-        insights.firstWhere((i) => i.title == 'Income increased').detail,
+        insights.firstWhere((i) => i.title == 'Pemasukan meningkat').detail,
         contains('Rp'),
       );
     });
@@ -496,19 +496,19 @@ void main() {
       container.read(appRouterProvider).go('/insights');
       await tester.pumpAndSettle();
 
-      expect(find.text('Insights'), findsNWidgets(2)); // header + bottom nav
+      expect(find.text('Wawasan'), findsNWidgets(2)); // header + bottom nav
 
       // The time-distribution card lives on the Analytics tab.
-      await tester.tap(find.text('Analytics'));
+      await tester.tap(find.text('Analitik'));
       await tester.pumpAndSettle();
 
       final scrollable = find.byType(Scrollable).first;
       await tester.scrollUntilVisible(
-        find.text('No time recorded this week yet.'),
+        find.text('Belum ada waktu tercatat minggu ini.'),
         200,
         scrollable: scrollable,
       );
-      expect(find.text('No time recorded this week yet.'), findsOneWidget);
+      expect(find.text('Belum ada waktu tercatat minggu ini.'), findsOneWidget);
     });
   });
 }

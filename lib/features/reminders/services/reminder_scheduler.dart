@@ -53,7 +53,7 @@ class ReminderScheduler {
         reminders.add(
           PendingReminder.oneShot(
             id: activity.id.hashCode,
-            title: 'Upcoming: ${activity.title}',
+            title: 'Segera: ${activity.title}',
             body: _categoryHint(activity),
             when: activity.startTime.subtract(lead),
           ),
@@ -70,8 +70,8 @@ class ReminderScheduler {
       reminders.add(
         PendingReminder.daily(
           id: ReminderIds.habit,
-          title: 'Habit time',
-          body: 'Take a moment to complete today\'s habits.',
+          title: 'Waktu kebiasaan',
+          body: 'Luangkan waktu untuk menyelesaikan kebiasaan hari ini.',
           time: time,
         ),
       );
@@ -86,8 +86,8 @@ class ReminderScheduler {
       reminders.add(
         PendingReminder.daily(
           id: ReminderIds.finance,
-          title: 'Record your day',
-          body: 'Log today\'s transactions before the day ends.',
+          title: 'Catat hari Anda',
+          body: 'Catat transaksi hari ini sebelum hari berakhir.',
           time: time,
         ),
       );
@@ -100,19 +100,17 @@ class ReminderScheduler {
     switch (activity.category.trim().toLowerCase()) {
       case 'workout':
       case 'exercise':
-        return 'Your workout is about to start.';
+        return 'Olahraga Anda akan segera dimulai.';
       case 'study':
-        return 'Your study session is about to start.';
+        return 'Sesi belajar Anda akan segera dimulai.';
       default:
-        return 'It starts at ${_formatTime(activity.startTime)}.';
+        return 'Dimulai pada ${_formatTime(activity.startTime)}.';
     }
   }
 
   String _formatTime(DateTime t) {
-    final hour = t.hour;
+    final hour = t.hour.toString().padLeft(2, '0');
     final minute = t.minute.toString().padLeft(2, '0');
-    final period = hour < 12 ? 'AM' : 'PM';
-    final displayHour = hour % 12 == 0 ? 12 : hour % 12;
-    return '$displayHour:$minute $period';
+    return '$hour:$minute';
   }
 }

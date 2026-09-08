@@ -115,9 +115,9 @@ class NotificationService {
     const details = NotificationDetails(
       android: AndroidNotificationDetails(
         'daily_life_reminders',
-        'Daily Life reminders',
+        'Pengingat Activus',
         channelDescription:
-            'Reminders for scheduled activities, habits and finance.',
+            'Pengingat untuk aktivitas terjadwal, kebiasaan, dan keuangan.',
         importance: Importance.high,
         priority: Priority.high,
       ),

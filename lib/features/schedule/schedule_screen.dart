@@ -7,17 +7,17 @@ import '../../core/widgets/widgets.dart';
 import 'schedule_providers.dart';
 
 /// Abbreviations for each weekday.
-const _dayAbbr = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const _dayAbbr = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 
 /// Full names for each weekday.
 const _dayNames = [
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-  'Sunday',
+  'Senin',
+  'Selasa',
+  'Rabu',
+  'Kamis',
+  'Jumat',
+  'Sabtu',
+  'Minggu',
 ];
 
 class ScheduleScreen extends ConsumerWidget {
@@ -38,7 +38,7 @@ class ScheduleScreen extends ConsumerWidget {
             child: schedulesAsync.when(
               loading: () => const LoadingState(),
               error: (e, _) => ErrorState(
-                message: 'Could not load schedule.',
+                message: 'Gagal memuat jadwal.',
                 onRetry: () => ref.invalidate(schedulesForDayProvider),
               ),
               data: (schedules) => _ScheduleList(
@@ -63,7 +63,7 @@ class _Header extends StatelessWidget {
       child: Align(
         alignment: Alignment.centerLeft,
         child: Text(
-          'Schedule',
+          'Jadwal',
           style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
         ),
       ),
@@ -149,7 +149,7 @@ class _ScheduleList extends StatelessWidget {
   Widget build(BuildContext context) {
     if (schedules.isEmpty) {
       return EmptyState(
-        message: 'No classes on $dayName.',
+        message: 'Tidak ada jadwal pada hari $dayName.',
         icon: Icons.event_busy_outlined,
       );
     }
@@ -228,11 +228,9 @@ DateTime _parseTime(String time) {
   return DateTime(2000, 1, 1, int.parse(parts[0]), int.parse(parts[1]));
 }
 
-/// Formats a [DateTime] into a human-readable time like "10:10 AM".
+/// Formats a [DateTime] into a 24-hour string like "10:10".
 String _formatTime(DateTime t) {
-  final hour = t.hour;
+  final hour = t.hour.toString().padLeft(2, '0');
   final minute = t.minute.toString().padLeft(2, '0');
-  final period = hour < 12 ? 'AM' : 'PM';
-  final displayHour = hour % 12 == 0 ? 12 : hour % 12;
-  return '$displayHour:$minute $period';
+  return '$hour:$minute';
 }

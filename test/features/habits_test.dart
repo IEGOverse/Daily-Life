@@ -158,8 +158,8 @@ void main() {
       container.read(appRouterProvider).go('/habits');
       await tester.pumpAndSettle();
 
-      expect(find.text('Habits'), findsOneWidget);
-      expect(find.text('No habits yet.'), findsOneWidget);
+      expect(find.text('Kebiasaan'), findsOneWidget);
+      expect(find.text('Belum ada kebiasaan.'), findsOneWidget);
     });
   });
 }

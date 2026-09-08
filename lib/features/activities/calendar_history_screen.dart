@@ -55,10 +55,10 @@ class _CalendarHistoryScreenState extends ConsumerState<CalendarHistoryScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Calendar'),
+        title: const Text('Kalender'),
         actions: [
           IconButton(
-            tooltip: 'Today',
+            tooltip: 'Hari Ini',
             icon: const Icon(Icons.today),
             onPressed: () {
               final today = ref.read(clockProvider);
@@ -81,7 +81,7 @@ class _CalendarHistoryScreenState extends ConsumerState<CalendarHistoryScreen> {
           monthActivitiesAsync.when(
             loading: () => const LoadingState(),
             error: (e, _) => ErrorState(
-              message: 'Could not load calendar.',
+              message: 'Gagal memuat kalender.',
               onRetry: () =>
                   ref.invalidate(activitiesForMonthProvider(_focusedMonth)),
             ),
@@ -106,7 +106,7 @@ class _CalendarHistoryScreenState extends ConsumerState<CalendarHistoryScreen> {
           dayActivitiesAsync.when(
             loading: () => const LoadingState(),
             error: (e, _) => ErrorState(
-              message: 'Could not load activities.',
+              message: 'Gagal memuat aktivitas.',
               onRetry: () =>
                   ref.invalidate(activitiesForDayProvider(_selectedDay)),
             ),
@@ -148,18 +148,18 @@ class _MonthHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const months = [
-      'January',
-      'February',
-      'March',
+      'Januari',
+      'Februari',
+      'Maret',
       'April',
-      'May',
-      'June',
-      'July',
-      'August',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
       'September',
-      'October',
+      'Oktober',
       'November',
-      'December',
+      'Desember',
     ];
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -225,12 +225,23 @@ class _CalendarGrid extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(horizontal: 8),
           child: Row(
             children: [
-              for (final label in const ['M', 'T', 'W', 'T', 'F', 'S', 'S'])
+              for (final label in const [
+                'Sen',
+                'Sel',
+                'Rab',
+                'Kam',
+                'Jum',
+                'Sab',
+                'Min',
+              ])
                 Expanded(
                   child: Center(
                     child: Text(
                       label,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                      ),
                     ),
                   ),
                 ),
@@ -330,7 +341,7 @@ class _DayActivityList extends StatelessWidget {
   Widget build(BuildContext context) {
     if (activities.isEmpty) {
       return const EmptyState(
-        message: 'No activities for this day.',
+        message: 'Tidak ada aktivitas untuk hari ini.',
         icon: Icons.calendar_today_outlined,
       );
     }
@@ -364,7 +375,7 @@ class _HistoryActions extends StatelessWidget {
   Widget build(BuildContext context) {
     if (!activity.status.isActionable) {
       return IconButton(
-        tooltip: 'Reset',
+        tooltip: 'Atur Ulang',
         icon: const Icon(Icons.refresh),
         onPressed: () => _setStatus(ref, activity.id, ActivityStatus.scheduled),
       );
@@ -373,13 +384,13 @@ class _HistoryActions extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         IconButton(
-          tooltip: 'Mark done',
+          tooltip: 'Tandai Selesai',
           icon: const Icon(Icons.check_circle_outline),
           onPressed: () =>
               _setStatus(ref, activity.id, ActivityStatus.completed),
         ),
         IconButton(
-          tooltip: 'Skip',
+          tooltip: 'Lewati',
           icon: const Icon(Icons.remove_circle_outline),
           onPressed: () => _setStatus(ref, activity.id, ActivityStatus.skipped),
         ),
@@ -431,36 +442,26 @@ String _timeRange(Activity activity) {
 }
 
 String _formatTime(DateTime t) {
-  final hour = t.hour;
+  final hour = t.hour.toString().padLeft(2, '0');
   final minute = t.minute.toString().padLeft(2, '0');
-  final period = hour < 12 ? 'AM' : 'PM';
-  final displayHour = hour % 12 == 0 ? 12 : hour % 12;
-  return '$displayHour:$minute $period';
+  return '$hour:$minute';
 }
 
 String _formatDayHeading(DateTime day) {
-  const days = [
-    'Monday',
-    'Tuesday',
-    'Wednesday',
-    'Thursday',
-    'Friday',
-    'Saturday',
-    'Sunday',
-  ];
+  const days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
   const months = [
-    'January',
-    'February',
-    'March',
+    'Januari',
+    'Februari',
+    'Maret',
     'April',
-    'May',
-    'June',
-    'July',
-    'August',
+    'Mei',
+    'Juni',
+    'Juli',
+    'Agustus',
     'September',
-    'October',
+    'Oktober',
     'November',
-    'December',
+    'Desember',
   ];
-  return '${days[day.weekday - 1]}, ${months[day.month - 1]} ${day.day}, ${day.year}';
+  return '${days[day.weekday - 1]}, ${day.day} ${months[day.month - 1]} ${day.year}';
 }

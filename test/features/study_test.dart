@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:daily_life/core/database/database.dart' as db;
 import 'package:daily_life/core/database/database_provider.dart';
 import 'package:daily_life/core/router/app_router.dart';
+import 'package:daily_life/features/dashboard/dashboard_providers.dart';
 import 'package:daily_life/features/study/data/study_session_repository.dart';
 import 'package:daily_life/features/study/domain/study_session.dart';
 import 'package:daily_life/main.dart';
@@ -39,7 +40,10 @@ void main() {
   group('Study session flow', () {
     testWidgets('adds a session and opens its detail', (tester) async {
       final container = ProviderContainer(
-        overrides: [inMemoryDatabaseOverride()],
+        overrides: [
+          inMemoryDatabaseOverride(),
+          clockProvider.overrideWithValue(DateTime(2026, 9, 8, 8)),
+        ],
       );
       addTearDown(container.dispose);
       final database = container.read(databaseProvider);
@@ -54,21 +58,21 @@ void main() {
       await tester.pumpAndSettle();
       container.read(appRouterProvider).go('/study');
       await tester.pumpAndSettle();
-      expect(find.text('No study sessions yet.'), findsOneWidget);
+      expect(find.text('Belum ada sesi belajar.'), findsOneWidget);
 
-      await tester.tap(find.text('Study session'));
+      await tester.tap(find.text('Sesi belajar'));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextFormField).first, 'Algorithms');
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'Notes (optional)'),
+        find.widgetWithText(TextFormField, 'Catatan (opsional)'),
         'Graphs and trees',
       );
-      await tester.tap(find.text('Understanding (optional)'));
+      await tester.tap(find.text('Pemahaman (opsional)'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('4 / 5'));
       tester.testTextInput.hide();
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Save session'));
+      await tester.tap(find.text('Simpan Sesi'));
       await tester.pumpAndSettle();
 
       expect(find.text('Algorithms'), findsOneWidget);
@@ -76,7 +80,7 @@ void main() {
       await tester.tap(find.text('Algorithms'));
       await tester.pumpAndSettle();
       expect(find.text('Graphs and trees'), findsOneWidget);
-      expect(find.text('Understanding: 4 / 5'), findsOneWidget);
+      expect(find.text('Pemahaman: 4 / 5'), findsOneWidget);
     });
 
     testWidgets('empty subject is rejected', (tester) async {
@@ -95,9 +99,9 @@ void main() {
       await tester.pumpAndSettle();
       container.read(appRouterProvider).go('/study/add');
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Save session'));
+      await tester.tap(find.text('Simpan Sesi'));
       await tester.pumpAndSettle();
-      expect(find.text('Enter a subject.'), findsOneWidget);
+      expect(find.text('Masukkan mata pelajaran.'), findsOneWidget);
       expect(await database.getAllStudySessions(), isEmpty);
     });
   });

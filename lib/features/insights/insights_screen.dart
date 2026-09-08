@@ -41,7 +41,7 @@ class _InsightsBodyState extends ConsumerState<_InsightsBody> {
           child: Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              'Insights',
+              'Wawasan',
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
             ),
           ),
@@ -51,19 +51,19 @@ class _InsightsBodyState extends ConsumerState<_InsightsBody> {
           child: Row(
             children: [
               _TabButton(
-                label: 'Overview',
+                label: 'Ringkasan',
                 isActive: _tab == _InsightTab.overview,
                 onTap: () => setState(() => _tab = _InsightTab.overview),
               ),
               const SizedBox(width: 8),
               _TabButton(
-                label: 'Analytics',
+                label: 'Analitik',
                 isActive: _tab == _InsightTab.analytics,
                 onTap: () => setState(() => _tab = _InsightTab.analytics),
               ),
               const SizedBox(width: 8),
               _TabButton(
-                label: 'Trends',
+                label: 'Tren',
                 isActive: _tab == _InsightTab.trends,
                 onTap: () => setState(() => _tab = _InsightTab.trends),
               ),
@@ -256,7 +256,7 @@ class _ScoreGaugeCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      "Today's score",
+                      "Skor Hari Ini",
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
@@ -265,7 +265,7 @@ class _ScoreGaugeCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     if (!s.hasData)
                       const Text(
-                        'No activities or habits recorded today yet.',
+                        'Belum ada aktivitas atau kebiasaan tercatat hari ini.',
                         style: TextStyle(
                           fontSize: 12,
                           color: ActivusColors.textTertiary,
@@ -274,13 +274,13 @@ class _ScoreGaugeCard extends StatelessWidget {
                     else ...[
                       const SizedBox(height: 4),
                       _GaugeBar(
-                        label: 'Tasks',
+                        label: 'Tugas',
                         fraction: s.taskScore,
                         color: ActivusColors.primaryBlue,
                       ),
                       const SizedBox(height: 6),
                       _GaugeBar(
-                        label: 'Habits',
+                        label: 'Kebiasaan',
                         fraction: s.habitScore,
                         color: ActivusColors.category2,
                       ),
@@ -304,10 +304,10 @@ class _ScoreGaugeCard extends StatelessWidget {
   }
 
   String _scoreHint(int score) {
-    if (score >= 90) return 'Great day';
-    if (score >= 70) return 'Solid day';
-    if (score >= 50) return 'On track';
-    return 'Room to grow';
+    if (score >= 90) return 'Hari yang hebat';
+    if (score >= 70) return 'Hari yang solid';
+    if (score >= 50) return 'Tepat sasaran';
+    return 'Masih bisa berkembang';
   }
 }
 
@@ -420,43 +420,43 @@ class _WeeklySummaryCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'This week',
+                'Minggu Ini',
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 12),
               Row(
                 children: [
                   _StatBlock(
-                    label: 'Avg score',
+                    label: 'Rata-rata skor',
                     value: s.scoredDays == 0 ? '—' : '${s.averageScore}',
                   ),
                   const SizedBox(width: 12),
                   _StatBlock(
-                    label: 'Tasks',
+                    label: 'Tugas',
                     value: '${s.completedActivities}/${s.plannedActivities}',
                   ),
                   const SizedBox(width: 12),
                   _StatBlock(
-                    label: 'Study',
+                    label: 'Belajar',
                     value: s.studySessions > 0
                         ? '${s.studyMinutes.round()}m'
                         : '—',
                   ),
                   const SizedBox(width: 12),
-                  _StatBlock(label: 'Workouts', value: '${s.workouts}'),
+                  _StatBlock(label: 'Olahraga', value: '${s.workouts}'),
                 ],
               ),
               const SizedBox(height: 12),
               Row(
                 children: [
-                  _StatBlock(label: 'Meals', value: '${s.mealCount}'),
+                  _StatBlock(label: 'Makanan', value: '${s.mealCount}'),
                   const SizedBox(width: 12),
-                  _StatBlock(label: 'Income', value: _money(s.income)),
+                  _StatBlock(label: 'Pemasukan', value: _money(s.income)),
                   const SizedBox(width: 12),
-                  _StatBlock(label: 'Expense', value: _money(s.expense)),
+                  _StatBlock(label: 'Pengeluaran', value: _money(s.expense)),
                   const SizedBox(width: 12),
                   _StatBlock(
-                    label: 'Habits',
+                    label: 'Kebiasaan',
                     value: '${s.habitCompletions}/${s.habitLogDays}',
                   ),
                 ],
@@ -528,14 +528,16 @@ class _TimeDistributionCard extends StatelessWidget {
       error: (_, _) => const SizedBox.shrink(),
       data: (t) {
         if (t.isEmpty) {
-          return const AppCard(child: Text('No time recorded this week yet.'));
+          return const AppCard(
+            child: Text('Belum ada waktu tercatat minggu ini.'),
+          );
         }
         return AppCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Time this week',
+                'Waktu minggu ini',
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 12),
@@ -545,7 +547,7 @@ class _TimeDistributionCard extends StatelessWidget {
               ],
               const SizedBox(height: 4),
               Text(
-                '${t.totalMinutes.round()} minutes tracked',
+                '${t.totalMinutes.round()} menit tercatat',
                 style: const TextStyle(
                   fontSize: 12,
                   color: ActivusColors.textTertiary,
@@ -635,12 +637,12 @@ class _InsightListCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Personal insights',
+                'Wawasan pribadi',
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 4),
               const Text(
-                'Generated locally from your records — nothing leaves this device.',
+                'Dihasilkan lokal dari catatan Anda — tidak ada yang keluar dari perangkat ini.',
                 style: TextStyle(
                   fontSize: 12,
                   color: ActivusColors.textTertiary,
@@ -714,18 +716,18 @@ class _ModuleLinks extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = <(String, String, IconData)>[
-      ('Workout', '/workout', Icons.fitness_center),
-      ('Study', '/study', Icons.menu_book),
-      ('Finance', '/finance', Icons.account_balance_wallet),
-      ('Nutrition', '/nutrition', Icons.restaurant),
-      ('Habits', '/habits', Icons.check_circle_outline),
+      ('Olahraga', '/workout', Icons.fitness_center),
+      ('Belajar', '/study', Icons.menu_book),
+      ('Keuangan', '/finance', Icons.account_balance_wallet),
+      ('Nutrisi', '/nutrition', Icons.restaurant),
+      ('Kebiasaan', '/habits', Icons.check_circle_outline),
     ];
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Modules',
+            'Modul',
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),

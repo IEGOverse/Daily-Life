@@ -60,14 +60,14 @@ class _ActivusBottomNav extends StatelessWidget {
               _NavTab(
                 icon: Icons.wb_sunny_outlined,
                 activeIcon: Icons.wb_sunny,
-                label: 'Today',
+                label: 'Hari Ini',
                 isActive: currentIndex == 0,
                 onTap: () => onTap(0),
               ),
               _NavTab(
                 icon: Icons.calendar_today_outlined,
                 activeIcon: Icons.calendar_today,
-                label: 'Schedule',
+                label: 'Jadwal',
                 isActive: currentIndex == 1,
                 onTap: () => onTap(1),
               ),
@@ -75,14 +75,14 @@ class _ActivusBottomNav extends StatelessWidget {
               _NavTab(
                 icon: Icons.insights_outlined,
                 activeIcon: Icons.insights,
-                label: 'Insights',
+                label: 'Wawasan',
                 isActive: currentIndex == 2,
                 onTap: () => onTap(2),
               ),
               _NavTab(
                 icon: Icons.more_horiz_outlined,
                 activeIcon: Icons.more_horiz,
-                label: 'More',
+                label: 'Lainnya',
                 isActive: currentIndex == 3,
                 onTap: () => onTap(3),
               ),

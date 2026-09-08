@@ -251,9 +251,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text("Nothing planned today."), findsOneWidget);
-      expect(find.text('No transactions today'), findsOneWidget);
-      expect(find.text('Daily Progress'), findsOneWidget);
+      expect(find.text('Belum ada aktivitas hari ini.'), findsOneWidget);
+      expect(find.text('Belum ada transaksi hari ini'), findsOneWidget);
+      expect(find.text('Progres Hari Ini'), findsOneWidget);
     });
 
     testWidgets('shows planned activities in the timeline', (tester) async {
@@ -296,7 +296,7 @@ void main() {
 
       expect(find.text('Business Process Reengineering'), findsOneWidget);
       expect(find.text('Data Mining'), findsOneWidget);
-      expect(find.text('NEXT UP'), findsOneWidget);
+      expect(find.text('BERIKUTNYA'), findsOneWidget);
     });
 
     testWidgets('marking an activity done persists and refreshes', (

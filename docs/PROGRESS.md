@@ -61,14 +61,46 @@ IN PROGRESS
 
 ## Verification Results
 - `dart analyze lib/ test/`: No issues found
-- `dart format --output=none lib test`: clean
-- `flutter test`: 135 tests pass (130 Phase 7 + 5 Phase 8: more screen flow, bottom-nav tab switching, finance segment filter)
+- `dart format --output=none lib test`: clean (this session: 4 files reformatted)
+- `flutter test`: 141 tests pass (135 prior + 6 new regression tests)
 - `flutter build bundle`: exit 0
 - `flutter build apk --debug`: exit 0
 - `build_runner`: generates successfully
 
+## Post-Phase 8 Correction Pass (real-device feedback)
+COMPLETE — data-flow and UX issues found during real-device / test runs of the
+Phase 8 build were fixed without changing product scope.
+
+- Study sync to Today: `todayStudyMinutesProvider` now watches
+  `studySessionsProvider.future` (single source of truth), so sessions saved
+  from the Study screen appear on the dashboard immediately. Default session
+  start/end times derive from `clockProvider` (`AddStudySessionScreen.initState`),
+  fixing a midnight wrap where `(hour + 1) % 24` made end < start and rejected
+  saves.
+- Profile: functional local profile implemented (`lib/features/profile/`:
+  repository via SharedPreferences key `profile.display_name`, providers,
+  `ProfileScreen`). Default display name "Pengguna Activus"; edits persist and
+  reflect on the More tab.
+- Nutrition first-use: creating the first food from inside the Add Meal dialog
+  now flows through cleanly. The meal dialog's food `DropdownButtonFormField`
+  reconciles selection by id and resets internal state when the food list
+  reloads (Drift returns fresh model instances per query), eliminating a
+  "DropdownButton value" assertion when the food list is invalidated while the
+  dialog is open (no seed data present).
+- Habits first-use: creating a habit from the empty state shows it in the list
+  immediately; the Add Habit dialog's target dropdown is now width-constrained
+  (fixes "InputDecorator cannot have an unbounded width" layout assertion).
+- Indonesian-first UI: all screen chrome, headers, empty states, dialogs,
+  notifications, and insight titles localized; bottom nav
+  Hari Ini/Jadwal/Wawasan/Lainnya. Seed/data content intentionally not
+  translated. No §4.1 Status Bar change.
+- Tests: added `test/features/regressions_test.dart` (study→dashboard sync,
+  Profile round trip, nutrition first-use widget flow, habit first-use widget
+  flow); updated 13 feature test files to Indonesian assertions; study tests
+  pin the clock.
+
 ## Current Task
-Phase 8 — UI/UX Polish fully implemented and validated; checkpoint commit pending.
+Post-Phase 8 correction pass complete; checkpoint commit pending.
 
 ## Phase 8 — UI/UX Polish Status
 COMPLETE — dark-first Activus design system and full interface polish delivered
@@ -215,6 +247,6 @@ If an agent/session stops unexpectedly:
 6. Commit only when the increment is stable.
 
 ## Last Updated
-2026-09-08 Phase 8 UI/UX polish complete (dark-first theme, bottom nav
-Today/Schedule/+/Insights/More, dashboard/schedule/finance/nutrition/habits/
-insights/more polish; 135 tests; bundle + debug APK build; checkpoint in progress).
+2026-09-08 Post-Phase 8 correction pass complete (study→dashboard sync,
+functional local Profile, nutrition + habit first-use flows, Indonesian-first
+UI; 141 tests; bundle + debug APK build; checkpoint commit pending).

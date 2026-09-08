@@ -250,7 +250,7 @@ void main() {
             )
             .first
             .mealType,
-        'Breakfast',
+        'Sarapan',
       );
       expect(
         engine
@@ -261,7 +261,7 @@ void main() {
             )
             .first
             .mealType,
-        'Dinner',
+        'Makan Malam',
       );
     });
 
@@ -297,8 +297,11 @@ void main() {
       container.read(appRouterProvider).go('/nutrition');
       await tester.pumpAndSettle();
 
-      expect(find.text('Nutrition'), findsOneWidget);
-      expect(find.text('No meals recorded today yet.'), findsOneWidget);
+      expect(find.text('Nutrisi'), findsOneWidget);
+      expect(
+        find.text('Belum ada makanan yang tercatat hari ini.'),
+        findsOneWidget,
+      );
     });
   });
 }

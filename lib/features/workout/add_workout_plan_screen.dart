@@ -34,7 +34,7 @@ class _AddWorkoutPlanScreenState extends ConsumerState<AddWorkoutPlanScreen> {
     if (!_formKey.currentState!.validate() || _selected.isEmpty) {
       if (_selected.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Select at least one exercise.')),
+          const SnackBar(content: Text('Pilih minimal satu gerakan.')),
         );
       }
       return;
@@ -64,7 +64,7 @@ class _AddWorkoutPlanScreenState extends ConsumerState<AddWorkoutPlanScreen> {
     } on Object {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not save workout plan.')),
+          const SnackBar(content: Text('Gagal menyimpan rencana olahraga.')),
         );
       }
     } finally {
@@ -76,7 +76,7 @@ class _AddWorkoutPlanScreenState extends ConsumerState<AddWorkoutPlanScreen> {
   Widget build(BuildContext context) {
     final exercises = ref.watch(exercisesProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('New workout plan')),
+      appBar: AppBar(title: const Text('Rencana Olahraga Baru')),
       bottomNavigationBar: SafeArea(
         minimum: const EdgeInsets.all(16),
         child: FilledButton(
@@ -87,7 +87,7 @@ class _AddWorkoutPlanScreenState extends ConsumerState<AddWorkoutPlanScreen> {
                   height: 20,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Text('Save plan'),
+              : const Text('Simpan Rencana'),
         ),
       ),
       body: Form(
@@ -99,19 +99,19 @@ class _AddWorkoutPlanScreenState extends ConsumerState<AddWorkoutPlanScreen> {
             TextFormField(
               controller: _nameController,
               decoration: const InputDecoration(
-                labelText: 'Plan name',
+                labelText: 'Nama rencana',
                 border: OutlineInputBorder(),
               ),
               validator: (value) => value == null || value.trim().isEmpty
-                  ? 'Enter a plan name.'
+                  ? 'Masukkan nama rencana.'
                   : null,
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _dayController,
               decoration: const InputDecoration(
-                labelText: 'Day label (optional)',
-                hintText: 'e.g. Monday or Push day',
+                labelText: 'Label hari (opsional)',
+                hintText: 'mis. Senin atau Hari Dorong',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -120,20 +120,20 @@ class _AddWorkoutPlanScreenState extends ConsumerState<AddWorkoutPlanScreen> {
               controller: _descriptionController,
               maxLines: 2,
               decoration: const InputDecoration(
-                labelText: 'Description (optional)',
+                labelText: 'Deskripsi (opsional)',
                 border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 24),
-            Text('Exercises', style: Theme.of(context).textTheme.titleLarge),
+            Text('Gerakan', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 4),
             const Text(
-              'New exercises use 3 sets, 10 reps, and 60 seconds rest.',
+              'Gerakan baru menggunakan 3 set, 10 repetisi, dan 60 detik istirahat.',
             ),
             const SizedBox(height: 8),
             exercises.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stack) => const Text('Failed to load exercises.'),
+              error: (error, stack) => const Text('Gagal memuat gerakan.'),
               data: (items) => Column(
                 children: [
                   for (final exercise in items) _exerciseTile(exercise),

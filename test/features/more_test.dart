@@ -13,14 +13,14 @@ void main() {
       container.read(appRouterProvider).go('/more');
       await tester.pumpAndSettle();
 
-      expect(find.text('More'), findsNWidgets(2)); // AppBar + bottom nav
+      expect(find.text('Lainnya'), findsNWidgets(2)); // AppBar + bottom nav
 
-      expect(find.text('Profile'), findsOneWidget);
-      expect(find.text('Settings'), findsOneWidget);
-      expect(find.text('Data & Sync'), findsOneWidget);
-      expect(find.text('Theme'), findsOneWidget);
-      expect(find.text('Help & Support'), findsOneWidget);
-      expect(find.text('About Activus'), findsOneWidget);
+      expect(find.text('Profil'), findsOneWidget);
+      expect(find.text('Pengaturan'), findsOneWidget);
+      expect(find.text('Data & Sinkronisasi'), findsOneWidget);
+      expect(find.text('Tema'), findsOneWidget);
+      expect(find.text('Bantuan & Dukungan'), findsOneWidget);
+      expect(find.text('Tentang Activus'), findsOneWidget);
     });
 
     testWidgets('Settings opens the reminders screen', (tester) async {
@@ -29,10 +29,10 @@ void main() {
       container.read(appRouterProvider).go('/more');
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Settings'));
+      await tester.tap(find.text('Pengaturan'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Reminders'), findsOneWidget);
+      expect(find.text('Pengingat'), findsOneWidget);
     });
 
     testWidgets('About Activus shows an informational dialog', (tester) async {
@@ -41,21 +41,21 @@ void main() {
       container.read(appRouterProvider).go('/more');
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('About Activus'));
+      await tester.tap(find.text('Tentang Activus'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Personal Life Operating System'), findsOneWidget);
+      expect(find.text('Sistem Operasi Kehidupan Pribadi'), findsOneWidget);
       expect(
         find.text(
-          'All data stays on your device. Nothing is uploaded or shared.',
+          'Semua data tersimpan di perangkat Anda. Tidak ada yang diunggah atau dibagikan.',
         ),
         findsOneWidget,
       );
 
-      await tester.tap(find.text('Close'));
+      await tester.tap(find.text('Tutup'));
       await tester.pumpAndSettle();
       expect(
-        find.text('About Activus'),
+        find.text('Tentang Activus'),
         findsOneWidget,
       ); // row only, dialog closed
     });
@@ -63,14 +63,14 @@ void main() {
     testWidgets('bottom nav switches between tabs', (tester) async {
       await _pumpApp(tester);
 
-      expect(find.text('More'), findsOneWidget); // bottom nav label only
-      await tester.tap(find.text('Schedule'));
+      expect(find.text('Lainnya'), findsOneWidget); // bottom nav label only
+      await tester.tap(find.text('Jadwal'));
       await tester.pumpAndSettle();
-      expect(find.text('Schedule'), findsNWidgets(2)); // header + nav label
+      expect(find.text('Jadwal'), findsNWidgets(2)); // header + nav label
 
-      await tester.tap(find.text('More'));
+      await tester.tap(find.text('Lainnya'));
       await tester.pumpAndSettle();
-      expect(find.text('Profile'), findsOneWidget);
+      expect(find.text('Profil'), findsOneWidget);
     });
   });
 }

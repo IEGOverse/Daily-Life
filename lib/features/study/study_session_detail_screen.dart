@@ -12,13 +12,13 @@ class StudySessionDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(studySessionByIdProvider(sessionId));
     return Scaffold(
-      appBar: AppBar(title: const Text('Study session')),
+      appBar: AppBar(title: const Text('Detail Sesi Belajar')),
       body: session.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) =>
-            const Center(child: Text('Failed to load session.')),
+            const Center(child: Text('Gagal memuat sesi.')),
         data: (value) => value == null
-            ? const Center(child: Text('Study session not found.'))
+            ? const Center(child: Text('Sesi belajar tidak ditemukan.'))
             : ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
@@ -28,18 +28,18 @@ class StudySessionDetailScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Date: ${value.date.year}-${value.date.month}-${value.date.day}',
+                    'Tanggal: ${value.date.year}-${value.date.month}-${value.date.day}',
                   ),
-                  Text('Start: ${value.startTime}'),
-                  if (value.endTime != null) Text('End: ${value.endTime}'),
+                  Text('Mulai: ${value.startTime}'),
+                  if (value.endTime != null) Text('Selesai: ${value.endTime}'),
                   if (value.durationSeconds != null)
-                    Text('Duration: ${value.durationSeconds! ~/ 60} minutes'),
+                    Text('Durasi: ${value.durationSeconds! ~/ 60} menit'),
                   if (value.understanding != null)
-                    Text('Understanding: ${value.understanding} / 5'),
+                    Text('Pemahaman: ${value.understanding} / 5'),
                   if (value.notes != null) ...[
                     const SizedBox(height: 20),
                     Text(
-                      'Notes',
+                      'Catatan',
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 8),

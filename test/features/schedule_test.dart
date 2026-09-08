@@ -268,11 +268,11 @@ void main() {
       await tester.pumpAndSettle();
 
       // Day selector chips should be present.
-      expect(find.text('Mon'), findsOneWidget);
-      expect(find.text('Fri'), findsOneWidget);
+      expect(find.text('Sen'), findsOneWidget);
+      expect(find.text('Jum'), findsOneWidget);
 
       // Tap Monday to view its classes.
-      await tester.tap(find.text('Mon'));
+      await tester.tap(find.text('Sen'));
       await tester.pumpAndSettle();
 
       // All 3 Monday classes should be visible.
@@ -294,10 +294,10 @@ void main() {
       await tester.pumpAndSettle();
 
       // Tap Saturday (index 5 among the chips).
-      await tester.tap(find.text('Sat'));
+      await tester.tap(find.text('Sab'));
       await tester.pumpAndSettle();
 
-      expect(find.text('No classes on Saturday.'), findsOneWidget);
+      expect(find.text('Tidak ada jadwal pada hari Sabtu.'), findsOneWidget);
     });
   });
 }

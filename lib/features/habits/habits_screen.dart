@@ -17,20 +17,36 @@ class HabitsScreen extends ConsumerWidget {
     final now = ref.watch(clockProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Habits')),
+      appBar: AppBar(title: const Text('Kebiasaan')),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: ActivusColors.primaryBlue,
         foregroundColor: Colors.white,
         onPressed: () => _openAddHabitDialog(context, ref),
         icon: const Icon(Icons.add),
-        label: const Text('Add habit'),
+        label: const Text('Tambah Kebiasaan'),
       ),
       body: statuses.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) =>
-            const Center(child: Text('Failed to load habits.')),
+            const Center(child: Text('Gagal memuat kebiasaan.')),
         data: (items) => items.isEmpty
-            ? const Center(child: Text('No habits yet.'))
+            ? const Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Belum ada kebiasaan.'),
+                    SizedBox(height: 8),
+                    Text(
+                      'Tambahkan kebiasaan pertama untuk mulai membangun konsistensi.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: ActivusColors.textTertiary,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              )
             : ListView.builder(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
                 itemCount: items.length,
@@ -83,7 +99,7 @@ class HabitsScreen extends ConsumerWidget {
     ref.invalidate(habitsWithStatusProvider);
     if (context.mounted) {
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('${habit.name} deleted')));
+          .showSnackBar(SnackBar(content: Text('${habit.name} dihapus')));
     }
   }
 }
@@ -147,7 +163,7 @@ class _HabitRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${habit.frequency} · target ${habit.target}',
+                  '${_frequencyLabel(habit.frequency)} · target ${habit.target}',
                   style: const TextStyle(
                     fontSize: 12,
                     color: ActivusColors.textTertiary,
@@ -167,9 +183,9 @@ class _HabitRow extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              Text(
-                'streak',
-                style: const TextStyle(
+              const Text(
+                'hari',
+                style: TextStyle(
                   fontSize: 10,
                   color: ActivusColors.textTertiary,
                 ),
@@ -177,7 +193,7 @@ class _HabitRow extends StatelessWidget {
             ],
           ),
           StatusPill(
-            label: completedToday ? 'Done' : 'Today',
+            label: completedToday ? 'Selesai' : 'Hari Ini',
             color: completedToday
                 ? ActivusColors.success
                 : ActivusColors.textTertiary,
@@ -225,8 +241,9 @@ class _AddHabitDialogState extends State<_AddHabitDialog> {
   Future<void> _submit() async {
     final name = _nameController.text.trim();
     if (name.isEmpty) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Enter a habit name')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Masukkan nama kebiasaan')));
       return;
     }
     final habit = Habit(
@@ -243,7 +260,7 @@ class _AddHabitDialogState extends State<_AddHabitDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Add habit'),
+      title: const Text('Tambah Kebiasaan'),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -251,7 +268,7 @@ class _AddHabitDialogState extends State<_AddHabitDialog> {
             TextFormField(
               controller: _nameController,
               decoration: const InputDecoration(
-                labelText: 'Name',
+                labelText: 'Nama',
                 border: OutlineInputBorder(),
               ),
               autofocus: true,
@@ -260,12 +277,12 @@ class _AddHabitDialogState extends State<_AddHabitDialog> {
             DropdownButtonFormField<String>(
               initialValue: _frequency,
               decoration: const InputDecoration(
-                labelText: 'Frequency',
+                labelText: 'Frekuensi',
                 border: OutlineInputBorder(),
               ),
               items: [
                 for (final f in _frequencies)
-                  DropdownMenuItem(value: f, child: Text(f)),
+                  DropdownMenuItem(value: f, child: Text(_frequencyLabel(f))),
               ],
               onChanged: (value) {
                 if (value != null) setState(() => _frequency = value);
@@ -274,20 +291,23 @@ class _AddHabitDialogState extends State<_AddHabitDialog> {
             const SizedBox(height: 12),
             Row(
               children: [
-                const Expanded(child: Text('Daily target')),
-                DropdownButtonFormField<int>(
-                  initialValue: _target,
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    isDense: true,
+                const Expanded(child: Text('Target harian')),
+                SizedBox(
+                  width: 104,
+                  child: DropdownButtonFormField<int>(
+                    initialValue: _target,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    items: [
+                      for (var i = 1; i <= 5; i++)
+                        DropdownMenuItem(value: i, child: Text('$i')),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) setState(() => _target = value);
+                    },
                   ),
-                  items: [
-                    for (var i = 1; i <= 5; i++)
-                      DropdownMenuItem(value: i, child: Text('$i')),
-                  ],
-                  onChanged: (value) {
-                    if (value != null) setState(() => _target = value);
-                  },
                 ),
               ],
             ),
@@ -297,10 +317,13 @@ class _AddHabitDialogState extends State<_AddHabitDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: const Text('Batal'),
         ),
-        FilledButton(onPressed: _submit, child: const Text('Save')),
+        FilledButton(onPressed: _submit, child: const Text('Simpan')),
       ],
     );
   }
 }
+
+String _frequencyLabel(String frequency) =>
+    frequency == 'daily' ? 'harian' : 'mingguan';

@@ -66,7 +66,7 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Add exercise')),
+      appBar: AppBar(title: const Text('Tambah Gerakan')),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -76,30 +76,30 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
               controller: _nameController,
               textCapitalization: TextCapitalization.words,
               decoration: const InputDecoration(
-                labelText: 'Name',
+                labelText: 'Nama',
                 border: OutlineInputBorder(),
               ),
               validator: (value) => (value == null || value.trim().isEmpty)
-                  ? 'Enter an exercise name.'
+                  ? 'Masukkan nama gerakan.'
                   : null,
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
               initialValue: _muscleGroup,
               decoration: const InputDecoration(
-                labelText: 'Muscle group',
+                labelText: 'Kelompok otot',
                 border: OutlineInputBorder(),
               ),
               items: [
                 for (final group in exerciseMuscleGroups)
                   DropdownMenuItem(
                     value: group,
-                    child: Text(group[0].toUpperCase() + group.substring(1)),
+                    child: Text(muscleGroupLabelFor(group)),
                   ),
               ],
               onChanged: (value) => setState(() => _muscleGroup = value),
               validator: (value) =>
-                  value == null ? 'Select a muscle group.' : null,
+                  value == null ? 'Pilih kelompok otot.' : null,
             ),
             const SizedBox(height: 16),
             TextFormField(
@@ -107,7 +107,7 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
               textCapitalization: TextCapitalization.sentences,
               maxLines: 2,
               decoration: const InputDecoration(
-                labelText: 'Description (optional)',
+                labelText: 'Deskripsi (opsional)',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -117,7 +117,7 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
               textCapitalization: TextCapitalization.sentences,
               maxLines: 5,
               decoration: const InputDecoration(
-                labelText: 'Instructions (optional)',
+                labelText: 'Instruksi (opsional)',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -130,7 +130,7 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
                       height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Save exercise'),
+                  : const Text('Simpan Gerakan'),
             ),
           ],
         ),

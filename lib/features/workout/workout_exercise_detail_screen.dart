@@ -14,14 +14,13 @@ class WorkoutExerciseDetailScreen extends ConsumerWidget {
     final exerciseAsync = ref.watch(exerciseByIdProvider(exerciseId));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Exercise')),
+      appBar: AppBar(title: const Text('Gerakan')),
       body: exerciseAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) =>
-            const Center(child: Text('Failed to load exercise.')),
+        error: (error, _) => const Center(child: Text('Gagal memuat gerakan.')),
         data: (exercise) {
           if (exercise == null) {
-            return const Center(child: Text('Exercise not found.'));
+            return const Center(child: Text('Gerakan tidak ditemukan.'));
           }
           final theme = Theme.of(context);
           return ListView(
@@ -53,14 +52,14 @@ class WorkoutExerciseDetailScreen extends ConsumerWidget {
               if (exercise.description != null) ...[
                 const SizedBox(height: 20),
                 _Section(
-                  title: 'Description',
+                  title: 'Deskripsi',
                   child: Text(exercise.description!),
                 ),
               ],
               if (exercise.instructions != null) ...[
                 const SizedBox(height: 20),
                 _Section(
-                  title: 'Instructions',
+                  title: 'Instruksi',
                   child: Text(exercise.instructions!),
                 ),
               ],

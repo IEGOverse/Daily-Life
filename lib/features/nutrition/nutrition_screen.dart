@@ -20,27 +20,29 @@ class NutritionScreen extends ConsumerWidget {
     final suggestions = ref.watch(mealSuggestionsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Nutrition')),
+      appBar: AppBar(title: const Text('Nutrisi')),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: ActivusColors.primaryBlue,
         foregroundColor: Colors.white,
         onPressed: () => _openAddMealDialog(context, ref, day),
         icon: const Icon(Icons.add),
-        label: const Text('Add meal'),
+        label: const Text('Tambah Makanan'),
       ),
       body: summary.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => const Center(child: Text('Failed to load nutrition.')),
+        error: (e, _) => const Center(child: Text('Gagal memuat nutrisi.')),
         data: (s) => ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
           children: [
             _NutritionSummary(summary: s),
             const SizedBox(height: 20),
-            _SectionLabel(label: 'Meals'),
+            _SectionLabel(label: 'Makanan'),
             if ((s['meals'] as List).isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 16),
-                child: Center(child: Text('No meals recorded today yet.')),
+                child: Center(
+                  child: Text('Belum ada makanan yang tercatat hari ini.'),
+                ),
               )
             else
               for (final mealEntry in s['meals'] as List)
@@ -57,7 +59,7 @@ class NutritionScreen extends ConsumerWidget {
             _MealSuggestionsCard(suggestions: suggestions),
             const SizedBox(height: 16),
             Text(
-              'Nutrition values are estimates, not medical-grade measurements.',
+              'Nilai gizi adalah perkiraan, bukan pengukuran tingkat medis.',
               style: Theme.of(context).textTheme.bodySmall
                   ?.copyWith(color: ActivusColors.textTertiary),
             ),
@@ -73,12 +75,11 @@ class NutritionScreen extends ConsumerWidget {
     DateTime day,
   ) async {
     final repo = ref.read(nutritionRepositoryProvider);
-    final foods = await ref.read(foodsProvider.future);
+    await ref.read(foodsProvider.future);
     if (!context.mounted) return;
     await showDialog<void>(
       context: context,
       builder: (context) => _AddMealDialog(
-        foods: foods,
         day: day,
         onSave: (meal) async {
           // Meal with no foods is invalid; return early.
@@ -175,13 +176,13 @@ class _NutritionSummary extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 _MacroRow(
-                  label: 'Carbs',
+                  label: 'Karbohidrat',
                   value: '$carbs g',
                   color: ActivusColors.category2,
                 ),
                 const SizedBox(height: 8),
                 _MacroRow(
-                  label: 'Fat',
+                  label: 'Lemak',
                   value: '$fat g',
                   color: ActivusColors.warning,
                 ),
@@ -310,7 +311,7 @@ class _MealRow extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   entries.isEmpty
-                      ? 'No foods'
+                      ? 'Tidak ada makanan'
                       : entries
                             .map(
                               (e) =>
@@ -371,7 +372,7 @@ class _MealSuggestionsCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    'Meal ideas',
+                    'Ide Makanan',
                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                   ),
                   const Icon(Icons.lightbulb_outline, size: 18),
@@ -379,7 +380,7 @@ class _MealSuggestionsCard extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               const Text(
-                'Generated locally from your foods — estimates, not medical advice.',
+                'Dihasilkan lokal dari makanan Anda — perkiraan, bukan saran medis.',
                 style: TextStyle(
                   fontSize: 12,
                   color: ActivusColors.textTertiary,
@@ -430,19 +431,14 @@ class _SuggestionTile extends StatelessWidget {
   }
 }
 
-class _AddMealDialog extends StatefulWidget {
-  const _AddMealDialog({
-    required this.foods,
-    required this.day,
-    required this.onSave,
-  });
+class _AddMealDialog extends ConsumerStatefulWidget {
+  const _AddMealDialog({required this.day, required this.onSave});
 
-  final List<Food> foods;
   final DateTime day;
   final Future<void> Function(_DraftMeal meal) onSave;
 
   @override
-  State<_AddMealDialog> createState() => _AddMealDialogState();
+  ConsumerState<_AddMealDialog> createState() => _AddMealDialogState();
 }
 
 class _DraftMeal {
@@ -451,10 +447,15 @@ class _DraftMeal {
   final List<MealFood> items;
 }
 
-class _AddMealDialogState extends State<_AddMealDialog> {
-  static const _mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
+class _AddMealDialogState extends ConsumerState<_AddMealDialog> {
+  static const _mealTypes = [
+    'Sarapan',
+    'Makan Siang',
+    'Makan Malam',
+    'Camilan',
+  ];
 
-  String _mealType = 'Breakfast';
+  String _mealType = 'Sarapan';
   final List<({Food food, double quantity})> _selected = [];
   Food? _food;
   final _quantityController = TextEditingController(text: '1');
@@ -471,6 +472,24 @@ class _AddMealDialogState extends State<_AddMealDialog> {
     if (food == null || quantity == null || quantity <= 0) return;
     setState(() => _selected.add((food: food, quantity: quantity)));
     _quantityController.text = '1';
+  }
+
+  Future<void> _createFood() async {
+    final repo = ref.read(nutritionRepositoryProvider);
+    final created = await showDialog<Food>(
+      context: context,
+      builder: (context) => _AddFoodDialog(
+        onSave: (food) async {
+          await repo.insertFood(food);
+          return food;
+        },
+      ),
+    );
+    if (created != null) {
+      ref.invalidate(foodsProvider);
+      ref.invalidate(mealSuggestionsProvider);
+      ref.invalidate(dailyNutritionProvider(widget.day));
+    }
   }
 
   Future<void> _submit() async {
@@ -501,8 +520,9 @@ class _AddMealDialogState extends State<_AddMealDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final foodsAsync = ref.watch(foodsProvider);
     return AlertDialog(
-      title: const Text('Add meal'),
+      title: const Text('Tambah Makanan'),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -510,7 +530,7 @@ class _AddMealDialogState extends State<_AddMealDialog> {
             DropdownButtonFormField<String>(
               initialValue: _mealType,
               decoration: const InputDecoration(
-                labelText: 'Meal type',
+                labelText: 'Jenis Makanan',
                 border: OutlineInputBorder(),
               ),
               items: [
@@ -522,30 +542,247 @@ class _AddMealDialogState extends State<_AddMealDialog> {
               },
             ),
             const SizedBox(height: 12),
-            if (widget.foods.isEmpty)
-              const Text('No foods in the database yet.')
-            else ...[
-              DropdownButtonFormField<Food>(
-                initialValue: _food,
+            foodsAsync.when(
+              loading: () => const Padding(
+                padding: EdgeInsets.all(16),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+              error: (e, _) => const Text('Gagal memuat makanan.'),
+              data: (foods) {
+                if (foods.isEmpty) {
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'Belum ada makanan di database.',
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Tambahkan makanan dulu untuk mulai mencatat menu Anda.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: ActivusColors.textTertiary,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: _createFood,
+                        icon: const Icon(Icons.add),
+                        label: const Text('Tambah Makanan Baru'),
+                      ),
+                    ],
+                  );
+                }
+                _food = foods.firstWhere(
+                  (f) => f.id == _food?.id,
+                  orElse: () => foods.first,
+                );
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DropdownButtonFormField<Food>(
+                      key: ValueKey(foods),
+                      initialValue: _food,
+                      decoration: const InputDecoration(
+                        labelText: 'Makanan',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: [
+                        for (final f in foods)
+                          DropdownMenuItem(value: f, child: Text(f.name)),
+                      ],
+                      onChanged: (value) => setState(() => _food = value),
+                    ),
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        onPressed: _createFood,
+                        icon: const Icon(Icons.add, size: 16),
+                        label: const Text('Tambah Makanan Baru'),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _quantityController,
+                            decoration: InputDecoration(
+                              labelText: 'Jumlah (${_food?.servingUnit ?? ''})',
+                              border: const OutlineInputBorder(),
+                            ),
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        FilledButton(
+                          onPressed: _addSelected,
+                          child: const Text('Tambah'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    if (_selected.isEmpty)
+                      const Text('Belum ada item ditambahkan.')
+                    else
+                      for (final e in _selected)
+                        ListTile(
+                          dense: true,
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(e.food.name),
+                          trailing: Text('${e.quantity} ${e.food.servingUnit}'),
+                        ),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Batal'),
+        ),
+        FilledButton(onPressed: _submit, child: const Text('Simpan Makanan')),
+      ],
+    );
+  }
+}
+
+class _AddFoodDialog extends StatefulWidget {
+  const _AddFoodDialog({required this.onSave});
+
+  final Future<Food> Function(Food food) onSave;
+
+  @override
+  State<_AddFoodDialog> createState() => _AddFoodDialogState();
+}
+
+class _AddFoodDialogState extends State<_AddFoodDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _servingSizeController = TextEditingController(text: '1');
+  final _servingUnitController = TextEditingController(text: 'porsi');
+  final _caloriesController = TextEditingController();
+  final _proteinController = TextEditingController();
+  final _carbsController = TextEditingController();
+  final _fatController = TextEditingController();
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _servingSizeController.dispose();
+    _servingUnitController.dispose();
+    _caloriesController.dispose();
+    _proteinController.dispose();
+    _carbsController.dispose();
+    _fatController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _saving = true);
+    final food = Food(
+      id: 'food_${DateTime.now().microsecondsSinceEpoch}',
+      name: _nameController.text.trim(),
+      servingSize: double.tryParse(_servingSizeController.text.trim()) ?? 1,
+      servingUnit: _servingUnitController.text.trim(),
+      calories: _num(_caloriesController),
+      protein: _num(_proteinController),
+      carbohydrate: _num(_carbsController),
+      fat: _num(_fatController),
+    );
+    try {
+      await widget.onSave(food);
+      if (mounted) Navigator.of(context).pop(food);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  double _num(TextEditingController c) => double.tryParse(c.text.trim()) ?? 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Tambah Makanan Baru'),
+      content: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: _nameController,
+                textCapitalization: TextCapitalization.words,
                 decoration: const InputDecoration(
-                  labelText: 'Food',
+                  labelText: 'Nama',
                   border: OutlineInputBorder(),
                 ),
-                items: [
-                  for (final f in widget.foods)
-                    DropdownMenuItem(value: f, child: Text(f.name)),
-                ],
-                onChanged: (value) => setState(() => _food = value),
+                validator: (value) => value == null || value.trim().isEmpty
+                    ? 'Masukkan nama makanan.'
+                    : null,
               ),
               const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
                     child: TextFormField(
-                      controller: _quantityController,
-                      decoration: InputDecoration(
-                        labelText: 'Quantity (${_food?.servingUnit ?? ''})',
-                        border: const OutlineInputBorder(),
+                      controller: _servingSizeController,
+                      decoration: const InputDecoration(
+                        labelText: 'Ukuran Porsi',
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      validator: (value) =>
+                          (double.tryParse(value?.trim() ?? '') ?? 0) > 0
+                          ? null
+                          : 'Porsi tidak valid.',
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _servingUnitController,
+                      decoration: const InputDecoration(
+                        labelText: 'Satuan',
+                        hintText: 'mis. porsi, g, buah',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _caloriesController,
+                decoration: const InputDecoration(
+                  labelText: 'Kalori (per porsi)',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _proteinController,
+                      decoration: const InputDecoration(
+                        labelText: 'Protein (g)',
+                        border: OutlineInputBorder(),
                       ),
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
@@ -553,33 +790,52 @@ class _AddMealDialogState extends State<_AddMealDialog> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  FilledButton(
-                    onPressed: _addSelected,
-                    child: const Text('Add'),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _carbsController,
+                      decoration: const InputDecoration(
+                        labelText: 'Karbo (g)',
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _fatController,
+                      decoration: const InputDecoration(
+                        labelText: 'Lemak (g)',
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              if (_selected.isEmpty)
-                const Text('No items added yet.')
-              else
-                for (final e in _selected)
-                  ListTile(
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(e.food.name),
-                    trailing: Text('${e.quantity} ${e.food.servingUnit}'),
-                  ),
             ],
-          ],
+          ),
         ),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: const Text('Batal'),
         ),
-        FilledButton(onPressed: _submit, child: const Text('Save meal')),
+        FilledButton(
+          onPressed: _saving ? null : _submit,
+          child: _saving
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Simpan Makanan'),
+        ),
       ],
     );
   }

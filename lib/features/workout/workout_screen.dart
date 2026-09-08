@@ -30,15 +30,15 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Workout'),
+        title: const Text('Olahraga'),
         actions: [
           IconButton(
-            tooltip: 'Add exercise',
+            tooltip: 'Tambah gerakan',
             icon: const Icon(Icons.add_circle_outline),
             onPressed: () => context.push('/workout/add'),
           ),
           IconButton(
-            tooltip: 'Workout plans',
+            tooltip: 'Rencana olahraga',
             icon: const Icon(Icons.view_list_outlined),
             onPressed: () => context.push('/workout/plans'),
           ),
@@ -46,7 +46,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
       ),
       body: exercisesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('Failed to load exercises.')),
+        error: (error, _) => Center(child: Text('Gagal memuat gerakan.')),
         data: (exercises) {
           return _ExerciseLibrary(
             exercises: exercises,
@@ -95,7 +95,7 @@ class _ExerciseLibrary extends StatelessWidget {
             controller: searchController,
             onChanged: onSearchChanged,
             decoration: const InputDecoration(
-              hintText: 'Search exercises',
+              hintText: 'Cari gerakan',
               prefixIcon: Icon(Icons.search),
               border: OutlineInputBorder(),
               isDense: true,
@@ -109,13 +109,13 @@ class _ExerciseLibrary extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12),
             children: [
               _GroupChip(
-                label: 'All',
+                label: 'Semua',
                 selected: selectedGroup == null,
                 onTap: () => onGroupChanged(null),
               ),
               for (final group in exerciseMuscleGroups)
                 _GroupChip(
-                  label: _labelFor(group),
+                  label: muscleGroupLabelFor(group),
                   selected: selectedGroup == group,
                   onTap: () => onGroupChanged(group),
                 ),
@@ -128,8 +128,8 @@ class _ExerciseLibrary extends StatelessWidget {
               ? Center(
                   child: Text(
                     exercises.isEmpty
-                        ? 'Your library is empty.'
-                        : 'No exercises match.',
+                        ? 'Pustaka gerakan masih kosong.'
+                        : 'Tidak ada gerakan yang cocok.',
                   ),
                 )
               : ListView.builder(
@@ -167,9 +167,6 @@ class _ExerciseLibrary extends StatelessWidget {
       ],
     );
   }
-
-  static String _labelFor(String group) =>
-      group[0].toUpperCase() + group.substring(1);
 }
 
 class _GroupChip extends StatelessWidget {

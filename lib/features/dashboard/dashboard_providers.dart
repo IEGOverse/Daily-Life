@@ -27,12 +27,15 @@ final dashboardSummaryProvider = FutureProvider<DashboardSummary>((ref) async {
 });
 
 /// Today's total study minutes derived from study sessions.
+///
+/// Watches the authoritative [studySessionsProvider] so any insert/update/
+/// delete of a study session (all of which invalidate it) automatically
+/// refreshes the dashboard study summary. No second source of truth.
 final todayStudyMinutesProvider = FutureProvider<int>((ref) async {
   final now = ref.watch(clockProvider);
   final day = DateTime(now.year, now.month, now.day);
   final nextDay = day.add(const Duration(days: 1));
-  final repo = ref.watch(studySessionRepositoryProvider);
-  final sessions = await repo.getAll();
+  final sessions = await ref.watch(studySessionsProvider.future);
   var total = 0;
   for (final s in sessions) {
     if (!s.date.isBefore(day) && s.date.isBefore(nextDay)) {

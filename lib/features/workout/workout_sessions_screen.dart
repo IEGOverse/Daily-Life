@@ -13,10 +13,10 @@ class WorkoutSessionsScreen extends ConsumerWidget {
     final sessions = ref.watch(workoutSessionsProvider);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Workout sessions'),
+        title: const Text('Sesi Olahraga'),
         actions: [
           IconButton(
-            tooltip: 'Workout history',
+            tooltip: 'Riwayat olahraga',
             icon: const Icon(Icons.insights_outlined),
             onPressed: () => context.push('/workout/history'),
           ),
@@ -25,9 +25,9 @@ class WorkoutSessionsScreen extends ConsumerWidget {
       body: sessions.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) =>
-            const Center(child: Text('Failed to load workout sessions.')),
+            const Center(child: Text('Gagal memuat sesi olahraga.')),
         data: (items) => items.isEmpty
-            ? const Center(child: Text('No workout sessions yet.'))
+            ? const Center(child: Text('Belum ada sesi olahraga.'))
             : ListView.builder(
                 padding: const EdgeInsets.all(12),
                 itemCount: items.length,
@@ -40,7 +40,7 @@ class WorkoutSessionsScreen extends ConsumerWidget {
                           session.completed ? Icons.check : Icons.play_arrow,
                         ),
                       ),
-                      title: Text(session.plan?.name ?? 'Workout session'),
+                      title: Text(session.plan?.name ?? 'Sesi olahraga'),
                       subtitle: Text(_subtitle(session)),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () =>
@@ -54,7 +54,7 @@ class WorkoutSessionsScreen extends ConsumerWidget {
   }
 
   static String _subtitle(WorkoutSession session) {
-    final status = session.completed ? 'Completed' : 'In progress';
+    final status = session.completed ? 'Selesai' : 'Berlangsung';
     final duration = session.durationSeconds == null
         ? ''
         : ' • ${session.durationSeconds}s';

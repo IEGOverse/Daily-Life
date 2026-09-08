@@ -12,11 +12,11 @@ class WorkoutHistoryScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final history = ref.watch(workoutHistoryProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Workout history')),
+      appBar: AppBar(title: const Text('Riwayat Olahraga')),
       body: history.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) =>
-            const Center(child: Text('Failed to load workout history.')),
+            const Center(child: Text('Gagal memuat riwayat olahraga.')),
         data: (summary) => _HistoryContent(summary: summary),
       ),
     );
@@ -31,7 +31,9 @@ class _HistoryContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (summary.completedSessions.isEmpty) {
-      return const Center(child: Text('Complete a workout to build history.'));
+      return const Center(
+        child: Text('Selesaikan olahraga untuk membangun riwayat.'),
+      );
     }
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
@@ -39,24 +41,24 @@ class _HistoryContent extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: _Stat(label: 'Workouts', value: '${summary.sessionCount}'),
+              child: _Stat(label: 'Olahraga', value: '${summary.sessionCount}'),
             ),
             const SizedBox(width: 8),
             Expanded(
               child: _Stat(
-                label: 'Minutes',
+                label: 'Menit',
                 value: '${summary.totalDurationSeconds ~/ 60}',
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: _Stat(label: 'Sets', value: '${summary.completedSets}'),
+              child: _Stat(label: 'Set', value: '${summary.completedSets}'),
             ),
           ],
         ),
         const SizedBox(height: 24),
         Text(
-          'Completed workouts',
+          'Olahraga yang selesai',
           style: Theme.of(context).textTheme.titleLarge,
         ),
         const SizedBox(height: 8),
@@ -64,7 +66,7 @@ class _HistoryContent extends StatelessWidget {
           Card(
             child: ListTile(
               leading: const CircleAvatar(child: Icon(Icons.check)),
-              title: Text(session.plan?.name ?? 'Workout session'),
+              title: Text(session.plan?.name ?? 'Sesi olahraga'),
               subtitle: Text(
                 '${session.date.year}-${session.date.month.toString().padLeft(2, '0')}-${session.date.day.toString().padLeft(2, '0')}  •  ${session.durationSeconds ?? 0}s',
               ),

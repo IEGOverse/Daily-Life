@@ -34,19 +34,19 @@ class InsightGenerator {
 
     _addComparison(
       insights,
-      title: 'Activities',
+      title: 'Aktivitas',
       current: current.completedActivities.toDouble(),
       previous: previous.completedActivities.toDouble(),
-      unit: 'tasks completed',
+      unit: 'tugas selesai',
     );
 
     if (current.studySessions > 0 || previous.studySessions > 0) {
       _addComparison(
         insights,
-        title: 'Study time',
+        title: 'Waktu belajar',
         current: current.studyMinutes,
         previous: previous.studyMinutes,
-        unit: 'study minutes',
+        unit: 'menit belajar',
         round: true,
       );
     }
@@ -54,39 +54,39 @@ class InsightGenerator {
     if (current.workouts > 0 || previous.workouts > 0) {
       _addComparison(
         insights,
-        title: 'Workouts',
+        title: 'Olahraga',
         current: current.workouts.toDouble(),
         previous: previous.workouts.toDouble(),
-        unit: 'workouts',
+        unit: 'sesi olahraga',
       );
     }
 
     if (current.habitCompletions > 0 || previous.habitCompletions > 0) {
       _addComparison(
         insights,
-        title: 'Habits',
+        title: 'Kebiasaan',
         current: current.habitCompletions.toDouble(),
         previous: previous.habitCompletions.toDouble(),
-        unit: 'habit completions',
+        unit: 'penyelesaian kebiasaan',
       );
     }
 
     _addComparison(
       insights,
-      title: 'Daily score',
+      title: 'Skor harian',
       current: current.avgScoreOrZero,
       previous: previous.avgScoreOrZero,
-      unit: 'pts average',
+      unit: 'rata-rata poin',
       round: true,
     );
 
     if (current.income > 0 || previous.income > 0) {
       _addComparison(
         insights,
-        title: 'Income',
+        title: 'Pemasukan',
         current: current.income,
         previous: previous.income,
-        unit: 'income',
+        unit: 'pemasukan',
         money: true,
       );
     }
@@ -107,9 +107,9 @@ class InsightGenerator {
       insights.add(
         PersonalInsight(
           direction: TrendDirection.flat,
-          title: '$title is steady',
+          title: '$title stabil',
           detail:
-              '$title this week matches last week (${_fmt(current, round: round, money: money)}).',
+              'Minggu ini $title sama dengan minggu lalu (${_fmt(current, round: round, money: money)}).',
         ),
       );
       return;
@@ -119,9 +119,9 @@ class InsightGenerator {
     insights.add(
       PersonalInsight(
         direction: up ? TrendDirection.up : TrendDirection.down,
-        title: '$title ${up ? 'increased' : 'decreased'}',
+        title: '$title ${up ? 'meningkat' : 'menurun'}',
         detail:
-            '$title ${_deltaPhrase(delta, unit, round: round, money: money)} this week compared with last week.',
+            'Minggu ini $title ${_deltaPhrase(delta, unit, round: round, money: money)} dibandingkan minggu lalu.',
       ),
     );
   }
@@ -133,7 +133,7 @@ class InsightGenerator {
     bool money = false,
   }) {
     final d = _fmt(delta, round: round, money: money);
-    return 'changed by $d ($unit)';
+    return 'berubah $d ($unit)';
   }
 
   String _fmt(double value, {bool round = false, bool money = false}) {

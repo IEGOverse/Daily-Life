@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../profile/profile_providers.dart';
+import '../profile/profile_repository.dart';
 
-class MoreScreen extends StatelessWidget {
+class MoreScreen extends ConsumerWidget {
   const MoreScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final displayName = ref.watch(displayNameProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('More')),
+      appBar: AppBar(title: const Text('Lainnya')),
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         children: [
@@ -17,9 +21,10 @@ class MoreScreen extends StatelessWidget {
             children: [
               _MoreRow(
                 icon: Icons.person_outline,
-                title: 'Profile',
-                subtitle: 'Activus User',
-                onTap: () {},
+                title: 'Profil',
+                subtitle:
+                    displayName.value ?? ProfileRepository.defaultDisplayName,
+                onTap: () => context.push('/profile'),
               ),
             ],
           ),
@@ -28,20 +33,20 @@ class MoreScreen extends StatelessWidget {
             children: [
               _MoreRow(
                 icon: Icons.settings_outlined,
-                title: 'Settings',
-                subtitle: 'Notifications & reminders',
+                title: 'Pengaturan',
+                subtitle: 'Notifikasi & pengingat',
                 onTap: () => context.push('/reminders'),
               ),
               _MoreRow(
                 icon: Icons.sync_outlined,
-                title: 'Data & Sync',
-                subtitle: 'Local only — no cloud',
+                title: 'Data & Sinkronisasi',
+                subtitle: 'Hanya lokal — tanpa cloud',
                 onTap: () {},
               ),
               _MoreRow(
                 icon: Icons.dark_mode_outlined,
-                title: 'Theme',
-                subtitle: 'Dark (default)',
+                title: 'Tema',
+                subtitle: 'Gelap (bawaan)',
                 onTap: () {},
               ),
             ],
@@ -51,14 +56,14 @@ class MoreScreen extends StatelessWidget {
             children: [
               _MoreRow(
                 icon: Icons.help_outline,
-                title: 'Help & Support',
-                subtitle: 'Assistance and guidance',
+                title: 'Bantuan & Dukungan',
+                subtitle: 'Bantuan dan panduan',
                 onTap: () {},
               ),
               _MoreRow(
                 icon: Icons.info_outline,
-                title: 'About Activus',
-                subtitle: 'Version 1.0.0',
+                title: 'Tentang Activus',
+                subtitle: 'Versi 1.0.0',
                 onTap: () => _showAboutDialog(context),
               ),
             ],
@@ -73,7 +78,7 @@ class MoreScreen extends StatelessWidget {
     showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('About Activus'),
+        title: const Text('Tentang Activus'),
         content: const Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -84,17 +89,17 @@ class MoreScreen extends StatelessWidget {
             ),
             SizedBox(height: 4),
             Text(
-              'Personal Life Operating System',
+              'Sistem Operasi Kehidupan Pribadi',
               style: TextStyle(color: ActivusColors.textSecondary),
             ),
             SizedBox(height: 16),
             Text(
-              'Version 1.0.0',
+              'Versi 1.0.0',
               style: TextStyle(color: ActivusColors.textSecondary),
             ),
             SizedBox(height: 8),
             Text(
-              'All data stays on your device. Nothing is uploaded or shared.',
+              'Semua data tersimpan di perangkat Anda. Tidak ada yang diunggah atau dibagikan.',
               style: TextStyle(color: ActivusColors.textSecondary),
             ),
           ],
@@ -102,7 +107,7 @@ class MoreScreen extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
+            child: const Text('Tutup'),
           ),
         ],
       ),

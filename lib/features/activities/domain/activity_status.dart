@@ -43,15 +43,15 @@ enum ActivityStatus {
   String get label {
     switch (this) {
       case ActivityStatus.completed:
-        return 'Completed';
+        return 'Selesai';
       case ActivityStatus.skipped:
-        return 'Skipped';
+        return 'Dilewati';
       case ActivityStatus.inProgress:
-        return 'In Progress';
+        return 'Sedang Berlangsung';
       case ActivityStatus.upcoming:
-        return 'Upcoming';
+        return 'Akan Datang';
       case ActivityStatus.scheduled:
-        return 'Scheduled';
+        return 'Segera';
     }
   }
 

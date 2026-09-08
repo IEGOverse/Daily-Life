@@ -179,8 +179,8 @@ void main() {
       container.read(appRouterProvider).go('/finance');
       await tester.pumpAndSettle();
 
-      expect(find.text('Finance'), findsOneWidget);
-      expect(find.text('No transactions yet.'), findsOneWidget);
+      expect(find.text('Keuangan'), findsOneWidget);
+      expect(find.text('Belum ada transaksi.'), findsOneWidget);
     });
 
     testWidgets('segment filter narrows the transaction list', (tester) async {
@@ -231,7 +231,7 @@ void main() {
       await tester.tap(
         find.descendant(
           of: find.byKey(const ValueKey('finance-filter')),
-          matching: find.text('Income'),
+          matching: find.text('Pemasukan'),
         ),
       );
       await tester.pumpAndSettle();
@@ -242,7 +242,7 @@ void main() {
       await tester.tap(
         find.descendant(
           of: find.byKey(const ValueKey('finance-filter')),
-          matching: find.text('Expense'),
+          matching: find.text('Pengeluaran'),
         ),
       );
       await tester.pumpAndSettle();
@@ -253,7 +253,7 @@ void main() {
       await tester.tap(
         find.descendant(
           of: find.byKey(const ValueKey('finance-filter')),
-          matching: find.text('All'),
+          matching: find.text('Semua'),
         ),
       );
       await tester.pumpAndSettle();

@@ -111,15 +111,15 @@ void main() {
       container.read(appRouterProvider).go('/workout/plans');
       await tester.pumpAndSettle();
       expect(
-        find.text('No workout plans yet. Create one to get started.'),
+        find.text('Belum ada rencana olahraga. Buat satu untuk memulai.'),
         findsOneWidget,
       );
 
-      await tester.tap(find.text('New plan'));
+      await tester.tap(find.text('Rencana Baru'));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextFormField).first, 'Push/Legs');
       await tester.tap(find.text('Bicep Curl'));
-      await tester.tap(find.text('Save plan'));
+      await tester.tap(find.text('Simpan Rencana'));
       await tester.pumpAndSettle();
 
       expect(find.text('Push/Legs'), findsOneWidget);
@@ -133,29 +133,32 @@ void main() {
 
       await tester.tap(find.text('Push/Legs'));
       await tester.pumpAndSettle();
-      expect(find.text('Exercises'), findsOneWidget);
+      expect(find.text('Gerakan'), findsOneWidget);
       expect(find.text('Bicep Curl'), findsOneWidget);
-      expect(find.text('3 sets x 10 reps  •  60s rest'), findsOneWidget);
+      expect(
+        find.text('3 set x 10 repetisi  •  60d istirahat'),
+        findsOneWidget,
+      );
 
-      await tester.tap(find.text('Start workout'));
+      await tester.tap(find.text('Mulai Olahraga'));
       await tester.pumpAndSettle();
-      expect(find.text('In progress'), findsOneWidget);
-      await tester.tap(find.text('Log sets'));
+      expect(find.text('Berlangsung'), findsOneWidget);
+      await tester.tap(find.text('Catat Set'));
       await tester.pumpAndSettle();
-      expect(find.text('Save set logs'), findsOneWidget);
+      expect(find.text('Simpan Catatan Set'), findsOneWidget);
       await tester.tap(find.byType(Checkbox).first);
-      await tester.tap(find.text('Save set logs'));
+      await tester.tap(find.text('Simpan Catatan Set'));
       await tester.pumpAndSettle();
       final sessionId = (await database.getAllWorkoutSessions()).single.id;
       expect((await database.getWorkoutSetLogs(sessionId)).first.completed, 1);
       await tester.pageBack();
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Complete workout'));
+      await tester.tap(find.text('Selesaikan Olahraga'));
       await tester.pumpAndSettle();
-      expect(find.text('Completed'), findsOneWidget);
+      expect(find.text('Selesai'), findsOneWidget);
       container.read(appRouterProvider).go('/workout/history');
       await tester.pumpAndSettle();
-      expect(find.text('Workouts'), findsOneWidget);
+      expect(find.text('Olahraga'), findsOneWidget);
       expect(find.text('1'), findsWidgets);
       expect(find.text('Push/Legs'), findsOneWidget);
     });
@@ -179,9 +182,9 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Save plan'));
+      await tester.tap(find.text('Simpan Rencana'));
       await tester.pumpAndSettle();
-      expect(find.text('Enter a plan name.'), findsOneWidget);
+      expect(find.text('Masukkan nama rencana.'), findsOneWidget);
       expect(await database.getAllWorkoutPlans(), isEmpty);
     });
   });

@@ -10,9 +10,9 @@
 - flutter_local_notifications ^22.3.0 / timezone ^0.11.1 / flutter_timezone ^5.1.0
 - Feature-based project structure under `lib/features/`
 
-**Current Phase**: Phase 8 — UI/UX Polish (IMPLEMENTED + VALIDATED; checkpoint commit in progress)
+**Current Phase**: Phase 8 — UI/UX Polish (IMPLEMENTED + correction pass COMPLETE; checkpoint commit pending)
 **Current Sprint**: Sprint 8 — UI Polish (COMPLETE)
-**Status**: Dark-first Activus design system + full interface polish implemented; 135 tests pass; `flutter build bundle` and `flutter build apk --debug` exit 0; docs updated.
+**Status**: Dark-first Activus design system + full interface polish delivered; post-Phase 8 correction pass (study→dashboard sync, functional local Profile, nutrition + habit first-use flows, Indonesian-first UI) done; 141 tests pass; `flutter build bundle` and `flutter build apk --debug` exit 0; docs updated.
 
 **Completed Milestones**:
 - Sprint 1 (Phase 1 — Daily Core): 6/6 tasks. Dashboard, recurring schedule, activity model, completion, calendar/history, add activity.
@@ -30,10 +30,15 @@
   - Navigation: `StatefulShellRoute.indexedStack` (Today/Schedule/Insights/More branches, per-branch navigators) + custom bottom nav in `lib/core/navigation/navigation_shell.dart` (center circular "+" → `/add`; active=primary blue, inactive=gray). All prior routes preserved.
   - Dashboard: greeting/date header (calendar + notification affordances), circular Daily Progress gauge, NOW, NEXT UP, compact timeline with status pills + done/skip/reset, compact Finance/Study/Nutrition summaries (`todayStudyMinutesProvider`, `todayNutritionSummaryProvider`).
   - Screens: Schedule (day strip + compact rows), Finance (balance card + working All/Income/Expense segment filter + compact rows), Nutrition (kcal gauge + compact meals + Phase 7 suggestions), Habits (compact toggle rows + streaks), Insights (Overview/Analytics/Trends tabs + transparent daily score), More (Profile/Settings→`/reminders`/Data & Sync/Theme/Help/About dialog).
+- Post-Phase 8 correction pass (this session):
+  - Study→dashboard sync: `todayStudyMinutesProvider` watches `studySessionsProvider.future`; study session defaults come from `clockProvider` (midnight-wrap fix).
+  - Functional local Profile (`lib/features/profile/`; SharedPreferences `profile.display_name`; default "Pengguna Activus").
+  - Nutrition first-use: food dropdown reconciles by id + resets state on list reload (Drift fresh instances fix); habit dialog target dropdown width-constrained (unbounded InputDecorator fix).
+  - Indonesian-first UI everywhere (chrome/headers/empty states/dialogs/notifications/insights; bottom nav Hari Ini/Jadwal/Wawasan/Lainnya); 24h "HH:mm"; seed/data content intentionally English.
 
 **Database schema**: v3 (added `notification_rules`).
 
-**Current Task**: Phase 8 complete; create checkpoint commit and push, then next roadmap checkpoint (Phase 9 — Portfolio/Production).
+**Current Task**: Post-Phase 8 correction pass complete; create checkpoint commit and push, then next roadmap checkpoint (Phase 9 — Portfolio/Production).
 
 **Important Architectural Decisions**:
 - Write-side builds local `DateTime` then `.toUtc()` to preserve wall-clock (Drift reader returns local).
@@ -48,12 +53,12 @@
 - Offline-first behavior for core personal data.
 - No paid external AI; errors are honest/no busy paths; Supabase/cloud sync deferred.
 
-**Latest Checkpoint**: Phase 8 implementation complete; commit + push pending.
+**Latest Checkpoint**: Post-Phase 8 correction pass complete; commit + push pending.
 
 **Validation Status**:
 - `dart analyze lib/ test/`: No issues found
 - `dart format --output=none lib test`: clean
-- `flutter test`: 135 tests pass (added Phase 8 more-screen/bottom-nav/finance-filter tests)
+- `flutter test`: 141 tests pass (135 prior + 6 new regression tests)
 - `flutter build bundle`: exit 0
 - `flutter build apk --debug`: exit 0
 

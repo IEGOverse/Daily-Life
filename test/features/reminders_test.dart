@@ -49,7 +49,7 @@ void main() {
       expect(activityReminders, hasLength(1));
       final reminder = activityReminders.first;
       expect(reminder.scheduledAt, DateTime(2026, 9, 8, 10, 45));
-      expect(reminder.title, 'Upcoming: Lecture');
+      expect(reminder.title, 'Segera: Lecture');
     });
 
     test('uses the configured lead minutes', () {
@@ -79,7 +79,7 @@ void main() {
 
       final habit = daily.firstWhere((r) => r.id == ReminderIds.habit);
       expect(habit.timeOfDay, '20:00');
-      expect(habit.title, 'Habit time');
+      expect(habit.title, 'Waktu kebiasaan');
     });
 
     test('disabled rules produce no reminders', () {

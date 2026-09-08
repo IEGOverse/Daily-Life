@@ -70,16 +70,16 @@ Color _statusColor(ActivityStatus status) {
 String _statusLabel(ActivityStatus status, bool isCurrent, bool isUpcoming) {
   switch (status) {
     case ActivityStatus.completed:
-      return 'Completed';
+      return 'Selesai';
     case ActivityStatus.skipped:
-      return 'Skipped';
+      return 'Dilewati';
     case ActivityStatus.inProgress:
-      return 'In Progress';
+      return 'Sedang Berlangsung';
     case ActivityStatus.upcoming:
     case ActivityStatus.scheduled:
-      if (isCurrent) return 'In Progress';
-      if (isUpcoming) return 'Soon';
-      return 'Upcoming';
+      if (isCurrent) return 'Sedang Berlangsung';
+      if (isUpcoming) return 'Segera';
+      return 'Akan Datang';
   }
 }
 
@@ -97,7 +97,7 @@ class DashboardScreen extends ConsumerWidget {
       body: summaryAsync.when(
         loading: () => const LoadingState(),
         error: (e, _) => ErrorState(
-          message: 'Could not load today.',
+          message: 'Gagal memuat hari ini.',
           onRetry: () => ref.invalidate(dashboardSummaryProvider),
         ),
         data: (summary) => RefreshIndicator(
@@ -147,10 +147,13 @@ class _TodayContent extends StatelessWidget {
           _NextUpCard(activity: next),
         ],
         const SizedBox(height: 20),
-        _SectionTitle(title: "Today's Timeline"),
+        _SectionTitle(title: 'Jadwal Hari Ini'),
         const SizedBox(height: 8),
         if (summary.totalActivities == 0)
-          const EmptyState(message: 'Nothing planned today.', icon: Icons.event)
+          const EmptyState(
+            message: 'Belum ada aktivitas hari ini.',
+            icon: Icons.event,
+          )
         else
           _Timeline(activities: summary.activities, now: now),
         const SizedBox(height: 20),
@@ -194,13 +197,13 @@ class _GreetingHeader extends StatelessWidget {
         ),
         _SmallIconButton(
           icon: Icons.calendar_month_outlined,
-          tooltip: 'Calendar & history',
+          tooltip: 'Kalender & riwayat',
           onTap: () => context.push('/calendar'),
         ),
         const SizedBox(width: 4),
         _SmallIconButton(
           icon: Icons.notifications_outlined,
-          tooltip: 'Reminders',
+          tooltip: 'Pengingat',
           onTap: () => context.push('/reminders'),
         ),
       ],
@@ -208,34 +211,34 @@ class _GreetingHeader extends StatelessWidget {
   }
 
   String _greetingFor(int hour) {
-    if (hour < 12) return 'Good morning';
-    if (hour < 18) return 'Good afternoon';
-    return 'Good evening';
+    if (hour < 12) return 'Selamat pagi';
+    if (hour < 18) return 'Selamat siang';
+    return 'Selamat malam';
   }
 
   String _formatDate(DateTime d) {
     const months = [
-      'January',
-      'February',
-      'March',
+      'Januari',
+      'Februari',
+      'Maret',
       'April',
-      'May',
-      'June',
-      'July',
-      'August',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
       'September',
-      'October',
+      'Oktober',
       'November',
-      'December',
+      'Desember',
     ];
     const days = [
-      'Monday',
-      'Tuesday',
-      'Wednesday',
-      'Thursday',
-      'Friday',
-      'Saturday',
-      'Sunday',
+      'Senin',
+      'Selasa',
+      'Rabu',
+      'Kamis',
+      'Jumat',
+      'Sabtu',
+      'Minggu',
     ];
     return '${days[d.weekday - 1]}, ${months[d.month - 1]} ${d.day}';
   }
@@ -317,26 +320,26 @@ class _DailyProgressGauge extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Daily Progress',
+                  'Progres Hari Ini',
                   style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
                     _ProgressStat(
-                      label: 'Done',
+                      label: 'Selesai',
                       value: '${summary.completedActivities}',
                       color: ActivusColors.success,
                     ),
                     const SizedBox(width: 12),
                     _ProgressStat(
-                      label: 'In progress',
+                      label: 'Berlangsung',
                       value: '$inProgress',
                       color: ActivusColors.primaryBlue,
                     ),
                     const SizedBox(width: 12),
                     _ProgressStat(
-                      label: 'Remaining',
+                      label: 'Tersisa',
                       value: '$remaining',
                       color: ActivusColors.textTertiary,
                     ),
@@ -451,7 +454,7 @@ class _NowCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const StatusPill(
-                  label: 'NOW',
+                  label: 'SEKARANG',
                   color: ActivusColors.statusInProgress,
                 ),
                 const SizedBox(height: 6),
@@ -500,7 +503,7 @@ class _NextUpCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const StatusPill(
-                  label: 'NEXT UP',
+                  label: 'BERIKUTNYA',
                   color: ActivusColors.warning,
                 ),
                 const SizedBox(height: 6),
@@ -646,7 +649,7 @@ class _CompletionActions extends StatelessWidget {
     if (activity.status == ActivityStatus.completed ||
         activity.status == ActivityStatus.skipped) {
       return IconButton(
-        tooltip: 'Reset',
+        tooltip: 'Atur ulang',
         icon: const Icon(Icons.refresh, size: 18),
         onPressed: onReset,
         padding: EdgeInsets.zero,
@@ -657,14 +660,14 @@ class _CompletionActions extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         IconButton(
-          tooltip: 'Done',
+          tooltip: 'Selesai',
           icon: const Icon(Icons.check_circle_outline, size: 18),
           onPressed: onDone,
           padding: EdgeInsets.zero,
           visualDensity: VisualDensity.compact,
         ),
         IconButton(
-          tooltip: 'Skip',
+          tooltip: 'Lewati',
           icon: const Icon(Icons.remove_circle_outline, size: 18),
           onPressed: onSkip,
           padding: EdgeInsets.zero,
@@ -703,13 +706,13 @@ class _CompactFinanceSummary extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           const Text(
-            'Finance',
+            'Keuangan',
             style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           ),
           const Spacer(),
           if (finance.income == 0 && finance.expense == 0)
             const Text(
-              'No transactions today',
+              'Belum ada transaksi hari ini',
               style: TextStyle(fontSize: 13, color: ActivusColors.textTertiary),
             )
           else
@@ -764,7 +767,7 @@ class _CompactStudySummary extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           const Text(
-            'Study',
+            'Belajar',
             style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           ),
           const Spacer(),
@@ -779,7 +782,9 @@ class _CompactStudySummary extends StatelessWidget {
               style: TextStyle(fontSize: 13, color: ActivusColors.textTertiary),
             ),
             data: (minutes) => Text(
-              minutes > 0 ? '${minutes}m today' : 'No sessions today',
+              minutes > 0
+                  ? '$minutes mnt hari ini'
+                  : 'Belum ada sesi belajar hari ini',
               style: const TextStyle(
                 fontSize: 13,
                 color: ActivusColors.textSecondary,
@@ -816,7 +821,7 @@ class _CompactNutritionSummary extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           const Text(
-            'Nutrition',
+            'Nutrisi',
             style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           ),
           const Spacer(),
@@ -833,7 +838,7 @@ class _CompactNutritionSummary extends StatelessWidget {
             data: (s) {
               final kcal = (s['calories'] as num).toDouble().round();
               return Text(
-                kcal > 0 ? '$kcal kcal' : 'No meals today',
+                kcal > 0 ? '$kcal kcal' : 'Belum ada makanan hari ini',
                 style: const TextStyle(
                   fontSize: 13,
                   color: ActivusColors.textSecondary,
@@ -862,9 +867,7 @@ String _timeRange(Activity activity) {
 }
 
 String _formatTime(DateTime t) {
-  final hour = t.hour;
+  final hour = t.hour.toString().padLeft(2, '0');
   final minute = t.minute.toString().padLeft(2, '0');
-  final period = hour < 12 ? 'AM' : 'PM';
-  final displayHour = hour % 12 == 0 ? 12 : hour % 12;
-  return '$displayHour:$minute $period';
+  return '$hour:$minute';
 }
