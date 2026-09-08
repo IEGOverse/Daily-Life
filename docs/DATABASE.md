@@ -163,8 +163,29 @@ balance = total income - total expense
 Nutrition:
 meal calories/macros = sum of meal_foods × food nutrition per serving
 
-Productivity:
-derived from planned/completed activities according to a documented scoring rule.
+Productivity (Daily Score 0-100):
+The daily score is a transparent indicator, not a judgment of the user.
+It is derived from two visible components and never from body appearance,
+weight, calories burned, or restrictive health targets:
+
+  taskScore   = completed planned activities / planned activities
+                (1.0 when no activities are planned that day)
+  habitScore  = completed active habits / active habits
+                (1.0 when there are no active habits)
+  score       = round(taskScore × 50 + habitScore × 50)
+
+When the day has no planned activities AND no active habits, no numeric
+score is implied (treated as "no data"). Averages (e.g. weekly average)
+are computed only over days that actually had scored data.
+
+Time analytics:
+- Study minutes  = sum of study_sessions.duration_seconds
+- Workout minutes = sum of workout_sessions.duration_seconds (completed only)
+- Scheduled time by category = sum of completed activities (end - start),
+  grouped by category.
+
+All analytics are derived on the fly from authoritative records. No
+analytics summary rows are stored, and no module data is duplicated.
 
 ## 5. Future Tables
 Possible later additions:

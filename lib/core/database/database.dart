@@ -195,6 +195,19 @@ class AppDatabase extends _$AppDatabase {
     ),
   );
 
+  Future<List<WorkoutSession>> getWorkoutSessionsForRange(
+    DateTime startInclusive,
+    DateTime endExclusive,
+  ) =>
+      (select(workoutSessions)
+            ..where(
+              (t) =>
+                  t.date.isBiggerOrEqualValue(startInclusive.toUtc()) &
+                  t.date.isSmallerThanValue(endExclusive.toUtc()),
+            )
+            ..orderBy([(t) => OrderingTerm.asc(t.date)]))
+          .get();
+
   // --- Study sessions -----------------------------------------------------
   Future<List<StudySession>> getAllStudySessions() => (select(
     studySessions,
@@ -207,6 +220,19 @@ class AppDatabase extends _$AppDatabase {
       (studySessions.update()..where((t) => t.id.equals(id))).write(values);
   Future<void> deleteStudySession(String id) =>
       (delete(studySessions)..where((t) => t.id.equals(id))).go();
+
+  Future<List<StudySession>> getStudySessionsForRange(
+    DateTime startInclusive,
+    DateTime endExclusive,
+  ) =>
+      (select(studySessions)
+            ..where(
+              (t) =>
+                  t.date.isBiggerOrEqualValue(startInclusive.toUtc()) &
+                  t.date.isSmallerThanValue(endExclusive.toUtc()),
+            )
+            ..orderBy([(t) => OrderingTerm.asc(t.date)]))
+          .get();
 
   // --- Study topics -----------------------------------------------------
   Future<List<StudyTopic>> getAllStudyTopics() => (select(studyTopics)).get();
@@ -311,6 +337,19 @@ class AppDatabase extends _$AppDatabase {
   Future<void> deleteMeal(String id) =>
       (delete(meals)..where((t) => t.id.equals(id))).go();
 
+  Future<List<Meal>> getMealsForRange(
+    DateTime startInclusive,
+    DateTime endExclusive,
+  ) =>
+      (select(meals)
+            ..where(
+              (t) =>
+                  t.date.isBiggerOrEqualValue(startInclusive.toUtc()) &
+                  t.date.isSmallerThanValue(endExclusive.toUtc()),
+            )
+            ..orderBy([(t) => OrderingTerm.asc(t.date)]))
+          .get();
+
   // --- Nutrition: Meal foods ----------------------------------------------
   Future<List<MealFood>> getMealFoods(String mealId) =>
       (select(mealFoods)..where((t) => t.mealId.equals(mealId))).get();
@@ -318,6 +357,71 @@ class AppDatabase extends _$AppDatabase {
       into(mealFoods).insert(mealFood);
   Future<void> deleteMealFoods(String mealId) =>
       (delete(mealFoods)..where((t) => t.mealId.equals(mealId))).go();
+
+  // --- Habits --------------------------------------------------------------
+  Future<List<Habit>> getAllHabits() =>
+      (select(habits)..orderBy([(t) => OrderingTerm.asc(t.name)])).get();
+  Future<List<Habit>> getActiveHabits() =>
+      (select(habits)
+            ..where((t) => t.isActive.equals(1))
+            ..orderBy([(t) => OrderingTerm.asc(t.name)]))
+          .get();
+  Future<Habit?> getHabitById(String id) =>
+      (select(habits)..where((t) => t.id.equals(id))).getSingleOrNull();
+  Future<void> insertHabit(Habit habit) => into(habits).insert(habit);
+  Future<void> updateHabit(String id, HabitsCompanion values) =>
+      (habits.update()..where((t) => t.id.equals(id))).write(values);
+  Future<void> deleteHabit(String id) async {
+    await (delete(habitLogs)..where((t) => t.habitId.equals(id))).go();
+    await (delete(habits)..where((t) => t.id.equals(id))).go();
+  }
+
+  // --- Habit logs ----------------------------------------------------------
+  Future<HabitLog?> getHabitLog(String habitId, DateTime date) {
+    final start = _localStartOfDay(date);
+    final end = _localStartOfDay(date.add(const Duration(days: 1)));
+    return (select(habitLogs)..where(
+          (t) =>
+              t.habitId.equals(habitId) &
+              t.date.isBiggerOrEqualValue(start) &
+              t.date.isSmallerThanValue(end),
+        ))
+        .getSingleOrNull();
+  }
+
+  Future<List<HabitLog>> getHabitLogsForDay(DateTime day) async {
+    final start = _localStartOfDay(day);
+    final end = _localStartOfDay(day.add(const Duration(days: 1)));
+    return (select(habitLogs)..where(
+          (t) =>
+              t.date.isBiggerOrEqualValue(start) &
+              t.date.isSmallerThanValue(end),
+        ))
+        .get();
+  }
+
+  Future<List<HabitLog>> getHabitLogsForHabit(String habitId) =>
+      (select(habitLogs)
+            ..where((t) => t.habitId.equals(habitId))
+            ..orderBy([(t) => OrderingTerm.desc(t.date)]))
+          .get();
+  Future<List<HabitLog>> getHabitLogsForRange(
+    DateTime startInclusive,
+    DateTime endExclusive,
+  ) =>
+      (select(habitLogs)
+            ..where(
+              (t) =>
+                  t.date.isBiggerOrEqualValue(startInclusive.toUtc()) &
+                  t.date.isSmallerThanValue(endExclusive.toUtc()),
+            )
+            ..orderBy([(t) => OrderingTerm.asc(t.date)]))
+          .get();
+  Future<void> insertHabitLog(HabitLog log) => into(habitLogs).insert(log);
+  Future<void> updateHabitLog(String id, HabitLogsCompanion values) =>
+      (habitLogs.update()..where((t) => t.id.equals(id))).write(values);
+  Future<void> deleteHabitLog(String id) =>
+      (delete(habitLogs)..where((t) => t.id.equals(id))).go();
 
   DateTime _localStartOfDay(DateTime day) =>
       DateTime(day.year, day.month, day.day).toUtc();
