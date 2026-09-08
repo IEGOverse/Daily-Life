@@ -2,53 +2,205 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/theme/app_theme.dart';
+import '../../core/widgets/widgets.dart';
 import 'domain/daily_score.dart';
 import 'domain/insight_generator.dart';
 import 'domain/time_analytics.dart';
 import 'domain/weekly_summary.dart';
 import 'insights_providers.dart';
 
+enum _InsightTab { overview, analytics, trends }
+
 class InsightsScreen extends ConsumerWidget {
   const InsightsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final dailyScore = ref.watch(dailyScoreProvider);
-    final weekly = ref.watch(weeklySummaryProvider);
-    final time = ref.watch(weeklyTimeProvider);
-    final insights = ref.watch(personalInsightsProvider);
+    return const Scaffold(body: _InsightsBody());
+  }
+}
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Insights')),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          ref.invalidate(dailyScoreProvider);
-          ref.invalidate(weeklySummaryProvider);
-          ref.invalidate(weeklyTimeProvider);
-          ref.invalidate(personalInsightsProvider);
-          await ref.read(weeklySummaryProvider.future);
-        },
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 96),
-          children: [
-            _ScoreCard(score: dailyScore),
-            const SizedBox(height: 16),
-            _WeeklySummaryCard(summary: weekly),
-            const SizedBox(height: 16),
-            _PersonalInsightsCard(insights: insights),
-            const SizedBox(height: 16),
-            _TimeDistributionCard(time: time),
-            const SizedBox(height: 16),
-            const _ModuleLinks(),
-          ],
+class _InsightsBody extends ConsumerStatefulWidget {
+  const _InsightsBody();
+
+  @override
+  ConsumerState<_InsightsBody> createState() => _InsightsBodyState();
+}
+
+class _InsightsBodyState extends ConsumerState<_InsightsBody> {
+  _InsightTab _tab = _InsightTab.overview;
+
+  @override
+  Widget build(BuildContext context) {
+    final ref = this.ref;
+    return Column(
+      children: [
+        const Padding(
+          padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Insights',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: Row(
+            children: [
+              _TabButton(
+                label: 'Overview',
+                isActive: _tab == _InsightTab.overview,
+                onTap: () => setState(() => _tab = _InsightTab.overview),
+              ),
+              const SizedBox(width: 8),
+              _TabButton(
+                label: 'Analytics',
+                isActive: _tab == _InsightTab.analytics,
+                onTap: () => setState(() => _tab = _InsightTab.analytics),
+              ),
+              const SizedBox(width: 8),
+              _TabButton(
+                label: 'Trends',
+                isActive: _tab == _InsightTab.trends,
+                onTap: () => setState(() => _tab = _InsightTab.trends),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 4),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: () async {
+              ref.invalidate(dailyScoreProvider);
+              ref.invalidate(weeklySummaryProvider);
+              ref.invalidate(weeklyTimeProvider);
+              ref.invalidate(personalInsightsProvider);
+              await ref.read(weeklySummaryProvider.future);
+            },
+            child: Builder(
+              builder: (context) {
+                switch (_tab) {
+                  case _InsightTab.overview:
+                    return _OverviewTab(ref: ref);
+                  case _InsightTab.analytics:
+                    return _AnalyticsTab(ref: ref);
+                  case _InsightTab.trends:
+                    return _TrendsTab(ref: ref);
+                }
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TabButton extends StatelessWidget {
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _TabButton({
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 9),
+          decoration: BoxDecoration(
+            color: isActive
+                ? ActivusColors.primaryBlue
+                : ActivusColors.surfaceAlt,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isActive
+                  ? ActivusColors.primaryBlue
+                  : ActivusColors.border,
+            ),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+              color: isActive ? Colors.white : ActivusColors.textSecondary,
+            ),
+          ),
         ),
       ),
     );
   }
 }
 
-class _ScoreCard extends StatelessWidget {
-  const _ScoreCard({required this.score});
+class _OverviewTab extends StatelessWidget {
+  final WidgetRef ref;
+
+  const _OverviewTab({required this.ref});
+
+  @override
+  Widget build(BuildContext context) {
+    final dailyScore = ref.watch(dailyScoreProvider);
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+      children: [
+        _ScoreGaugeCard(score: dailyScore),
+        const SizedBox(height: 16),
+        _PersonalInsightsCard(insights: ref.watch(personalInsightsProvider)),
+        const SizedBox(height: 16),
+        const _ModuleLinks(),
+      ],
+    );
+  }
+}
+
+class _AnalyticsTab extends StatelessWidget {
+  final WidgetRef ref;
+
+  const _AnalyticsTab({required this.ref});
+
+  @override
+  Widget build(BuildContext context) {
+    final weekly = ref.watch(weeklySummaryProvider);
+    final time = ref.watch(weeklyTimeProvider);
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+      children: [
+        _WeeklySummaryCard(summary: weekly),
+        const SizedBox(height: 16),
+        _TimeDistributionCard(time: time),
+      ],
+    );
+  }
+}
+
+class _TrendsTab extends StatelessWidget {
+  final WidgetRef ref;
+
+  const _TrendsTab({required this.ref});
+
+  @override
+  Widget build(BuildContext context) {
+    final insights = ref.watch(personalInsightsProvider);
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+      children: [_InsightListCard(insights: insights)],
+    );
+  }
+}
+
+class _ScoreGaugeCard extends StatelessWidget {
+  const _ScoreGaugeCard({required this.score});
 
   final AsyncValue<DailyScore> score;
 
@@ -56,60 +208,95 @@ class _ScoreCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return score.when(
       loading: () => const SizedBox(
-        height: 160,
+        height: 180,
         child: Center(child: CircularProgressIndicator()),
       ),
       error: (_, _) => const SizedBox.shrink(),
       data: (s) {
-        final primary = Theme.of(context).colorScheme.primary;
-        return Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      "Today's score",
-                      style: Theme.of(context).textTheme.titleMedium,
+        final fraction = s.hasData ? s.score / 100.0 : 0.0;
+        return AppCard(
+          child: Row(
+            children: [
+              SizedBox(
+                width: 88,
+                height: 88,
+                child: CustomPaint(
+                  painter: _ScoreGaugePainter(
+                    progress: fraction.clamp(0.0, 1.0),
+                    color: ActivusColors.primaryBlue,
+                    bgColor: ActivusColors.border,
+                  ),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          s.hasData ? '${s.score}' : '—',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: ActivusColors.primaryBlue,
+                          ),
+                        ),
+                        const Text(
+                          '/ 100',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: ActivusColors.textTertiary,
+                          ),
+                        ),
+                      ],
                     ),
-                    if (!s.hasData) const Icon(Icons.info_outline, size: 16),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Today's score",
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    if (!s.hasData)
+                      const Text(
+                        'No activities or habits recorded today yet.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: ActivusColors.textTertiary,
+                        ),
+                      )
+                    else ...[
+                      const SizedBox(height: 4),
+                      _GaugeBar(
+                        label: 'Tasks',
+                        fraction: s.taskScore,
+                        color: ActivusColors.primaryBlue,
+                      ),
+                      const SizedBox(height: 6),
+                      _GaugeBar(
+                        label: 'Habits',
+                        fraction: s.habitScore,
+                        color: ActivusColors.category2,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        _scoreHint(s.score),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: ActivusColors.textSecondary,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
-                const SizedBox(height: 8),
-                if (!s.hasData)
-                  const Text(
-                    'No activities or habits recorded today yet.',
-                    style: TextStyle(color: Colors.white70),
-                  )
-                else ...[
-                  Text(
-                    '${s.score}',
-                    style: Theme.of(context).textTheme.displaySmall
-                        ?.copyWith(fontWeight: FontWeight.bold, color: primary),
-                  ),
-                  const SizedBox(height: 12),
-                  _ScoreBar(
-                    label: 'Tasks',
-                    fraction: s.taskScore,
-                    color: primary,
-                  ),
-                  const SizedBox(height: 8),
-                  _ScoreBar(
-                    label: 'Habits',
-                    fraction: s.habitScore,
-                    color: Colors.teal,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _scoreHint(s.score),
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },
@@ -124,16 +311,59 @@ class _ScoreCard extends StatelessWidget {
   }
 }
 
-class _ScoreBar extends StatelessWidget {
-  const _ScoreBar({
+class _ScoreGaugePainter extends CustomPainter {
+  final double progress;
+  final Color color;
+  final Color bgColor;
+
+  _ScoreGaugePainter({
+    required this.progress,
+    required this.color,
+    required this.bgColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2 - 6;
+
+    final bgPaint = Paint()
+      ..color = bgColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 6;
+
+    canvas.drawCircle(center, radius, bgPaint);
+
+    final fgPaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 6
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -3.14159265 / 2,
+      2 * 3.14159265 * progress,
+      false,
+      fgPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _ScoreGaugePainter oldDelegate) =>
+      oldDelegate.progress != progress;
+}
+
+class _GaugeBar extends StatelessWidget {
+  final String label;
+  final double fraction;
+  final Color color;
+
+  const _GaugeBar({
     required this.label,
     required this.fraction,
     required this.color,
   });
-
-  final String label;
-  final double fraction;
-  final Color color;
 
   @override
   Widget build(BuildContext context) {
@@ -143,8 +373,17 @@ class _ScoreBar extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: Theme.of(context).textTheme.bodySmall),
-            Text('${(fraction * 100).round()}%'),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                color: ActivusColors.textSecondary,
+              ),
+            ),
+            Text(
+              '${(fraction * 100).round()}%',
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            ),
           ],
         ),
         const SizedBox(height: 4),
@@ -176,54 +415,53 @@ class _WeeklySummaryCard extends StatelessWidget {
       ),
       error: (_, _) => const SizedBox.shrink(),
       data: (s) {
-        final textTheme = Theme.of(context).textTheme;
-        return Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('This week', style: textTheme.titleMedium),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    _StatBlock(
-                      label: 'Avg score',
-                      value: s.scoredDays == 0 ? '—' : '${s.averageScore}',
-                    ),
-                    const SizedBox(width: 12),
-                    _StatBlock(
-                      label: 'Tasks',
-                      value: '${s.completedActivities}/${s.plannedActivities}',
-                    ),
-                    const SizedBox(width: 12),
-                    _StatBlock(
-                      label: 'Study',
-                      value: s.studySessions > 0
-                          ? '${s.studyMinutes.round()}m'
-                          : '—',
-                    ),
-                    const SizedBox(width: 12),
-                    _StatBlock(label: 'Workouts', value: '${s.workouts}'),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    _StatBlock(label: 'Meals', value: '${s.mealCount}'),
-                    const SizedBox(width: 12),
-                    _StatBlock(label: 'Income', value: _money(s.income)),
-                    const SizedBox(width: 12),
-                    _StatBlock(label: 'Expense', value: _money(s.expense)),
-                    const SizedBox(width: 12),
-                    _StatBlock(
-                      label: 'Habits',
-                      value: '${s.habitCompletions}/${s.habitLogDays}',
-                    ),
-                  ],
-                ),
-              ],
-            ),
+        return AppCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'This week',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  _StatBlock(
+                    label: 'Avg score',
+                    value: s.scoredDays == 0 ? '—' : '${s.averageScore}',
+                  ),
+                  const SizedBox(width: 12),
+                  _StatBlock(
+                    label: 'Tasks',
+                    value: '${s.completedActivities}/${s.plannedActivities}',
+                  ),
+                  const SizedBox(width: 12),
+                  _StatBlock(
+                    label: 'Study',
+                    value: s.studySessions > 0
+                        ? '${s.studyMinutes.round()}m'
+                        : '—',
+                  ),
+                  const SizedBox(width: 12),
+                  _StatBlock(label: 'Workouts', value: '${s.workouts}'),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  _StatBlock(label: 'Meals', value: '${s.mealCount}'),
+                  const SizedBox(width: 12),
+                  _StatBlock(label: 'Income', value: _money(s.income)),
+                  const SizedBox(width: 12),
+                  _StatBlock(label: 'Expense', value: _money(s.expense)),
+                  const SizedBox(width: 12),
+                  _StatBlock(
+                    label: 'Habits',
+                    value: '${s.habitCompletions}/${s.habitLogDays}',
+                  ),
+                ],
+              ),
+            ],
           ),
         );
       },
@@ -242,95 +480,6 @@ class _WeeklySummaryCard extends StatelessWidget {
   }
 }
 
-class _PersonalInsightsCard extends StatelessWidget {
-  const _PersonalInsightsCard({required this.insights});
-
-  final AsyncValue<List<PersonalInsight>> insights;
-
-  @override
-  Widget build(BuildContext context) {
-    return insights.when(
-      loading: () => const SizedBox(
-        height: 120,
-        child: Center(child: CircularProgressIndicator()),
-      ),
-      error: (_, _) => const SizedBox.shrink(),
-      data: (list) {
-        if (list.isEmpty) return const SizedBox.shrink();
-        return Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Personal insights',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Generated locally from your records — nothing leaves this device.',
-                  style: Theme.of(context).textTheme.bodySmall
-                      ?.copyWith(color: Theme.of(context).hintColor),
-                ),
-                const SizedBox(height: 12),
-                for (final insight in list) ...[
-                  _InsightRow(insight: insight),
-                  if (insight != list.last) const Divider(height: 16),
-                ],
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _InsightRow extends StatelessWidget {
-  const _InsightRow({required this.insight});
-
-  final PersonalInsight insight;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = switch (insight.direction) {
-      TrendDirection.up => Colors.teal,
-      TrendDirection.down => Colors.orange,
-      TrendDirection.flat => Theme.of(context).colorScheme.primary,
-    };
-    final icon = switch (insight.direction) {
-      TrendDirection.up => Icons.trending_up,
-      TrendDirection.down => Icons.trending_down,
-      TrendDirection.flat => Icons.trending_flat,
-    };
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 20, color: color),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                insight.title,
-                style: Theme.of(context).textTheme.titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                insight.detail,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _StatBlock extends StatelessWidget {
   const _StatBlock({required this.label, required this.value});
 
@@ -345,14 +494,16 @@ class _StatBlock extends StatelessWidget {
         children: [
           Text(
             value,
-            style: Theme.of(context).textTheme.titleSmall
-                ?.copyWith(fontWeight: FontWeight.w600),
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           Text(
             label,
-            style: Theme.of(context).textTheme.bodySmall,
+            style: const TextStyle(
+              fontSize: 11,
+              color: ActivusColors.textTertiary,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -377,35 +528,30 @@ class _TimeDistributionCard extends StatelessWidget {
       error: (_, _) => const SizedBox.shrink(),
       data: (t) {
         if (t.isEmpty) {
-          return const Card(
-            child: Padding(
-              padding: EdgeInsets.all(16),
-              child: Text('No time recorded this week yet.'),
-            ),
-          );
+          return const AppCard(child: Text('No time recorded this week yet.'));
         }
-        return Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Time this week',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 12),
-                for (final entry in t.entries) ...[
-                  _TimeBar(entry: entry),
-                  const SizedBox(height: 8),
-                ],
-                const SizedBox(height: 4),
-                Text(
-                  '${t.totalMinutes.round()} minutes tracked',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
+        return AppCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Time this week',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 12),
+              for (final entry in t.entries) ...[
+                _TimeBar(entry: entry),
+                const SizedBox(height: 8),
               ],
-            ),
+              const SizedBox(height: 4),
+              Text(
+                '${t.totalMinutes.round()} minutes tracked',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: ActivusColors.textTertiary,
+                ),
+              ),
+            ],
           ),
         );
       },
@@ -430,11 +576,16 @@ class _TimeBar extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(entry.label, style: Theme.of(context).textTheme.bodySmall),
+            Text(
+              entry.label,
+              style: const TextStyle(
+                fontSize: 12,
+                color: ActivusColors.textSecondary,
+              ),
+            ),
             Text(
               label,
-              style: Theme.of(context).textTheme.bodySmall
-                  ?.copyWith(fontWeight: FontWeight.w600),
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
             ),
           ],
         ),
@@ -444,9 +595,112 @@ class _TimeBar extends StatelessWidget {
           child: LinearProgressIndicator(
             value: entry.fraction,
             minHeight: 6,
-            color: Theme.of(context).colorScheme.primary,
-            backgroundColor: Theme.of(context).colorScheme.primary
-                .withValues(alpha: 0.15),
+            color: ActivusColors.primaryBlue,
+            backgroundColor: ActivusColors.primaryBlue.withValues(alpha: 0.15),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PersonalInsightsCard extends StatelessWidget {
+  const _PersonalInsightsCard({required this.insights});
+
+  final AsyncValue<List<PersonalInsight>> insights;
+
+  @override
+  Widget build(BuildContext context) {
+    return _InsightListCard(insights: insights);
+  }
+}
+
+class _InsightListCard extends StatelessWidget {
+  const _InsightListCard({required this.insights});
+
+  final AsyncValue<List<PersonalInsight>> insights;
+
+  @override
+  Widget build(BuildContext context) {
+    return insights.when(
+      loading: () => const SizedBox(
+        height: 120,
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (_, _) => const SizedBox.shrink(),
+      data: (list) {
+        if (list.isEmpty) return const SizedBox.shrink();
+        return AppCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Personal insights',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Generated locally from your records — nothing leaves this device.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: ActivusColors.textTertiary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              for (final insight in list) ...[
+                _InsightRow(insight: insight),
+                if (insight != list.last) const Divider(height: 16),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _InsightRow extends StatelessWidget {
+  const _InsightRow({required this.insight});
+
+  final PersonalInsight insight;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = switch (insight.direction) {
+      TrendDirection.up => ActivusColors.success,
+      TrendDirection.down => ActivusColors.warning,
+      TrendDirection.flat => ActivusColors.primaryBlue,
+    };
+    final icon = switch (insight.direction) {
+      TrendDirection.up => Icons.trending_up,
+      TrendDirection.down => Icons.trending_down,
+      TrendDirection.flat => Icons.trending_flat,
+    };
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 20, color: color),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                insight.title,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                insight.detail,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: ActivusColors.textSecondary,
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -466,24 +720,55 @@ class _ModuleLinks extends StatelessWidget {
       ('Nutrition', '/nutrition', Icons.restaurant),
       ('Habits', '/habits', Icons.check_circle_outline),
     ];
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Modules', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            for (final (label, route, icon) in items)
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: Icon(icon),
-                title: Text(label),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => context.push(route),
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Modules',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          for (final (label, route, icon) in items)
+            InkWell(
+              onTap: () => context.push(route),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: ActivusColors.surfaceAlt,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        icon,
+                        size: 20,
+                        color: ActivusColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        label,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    const Icon(
+                      Icons.chevron_right,
+                      size: 18,
+                      color: ActivusColors.textTertiary,
+                    ),
+                  ],
+                ),
               ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }

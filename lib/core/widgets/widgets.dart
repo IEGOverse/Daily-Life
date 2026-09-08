@@ -1,31 +1,21 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_theme.dart';
+
 class AppCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
-  final double elevation;
-  final BorderRadius? borderRadius;
   final VoidCallback? onTap;
 
-  const AppCard({
-    super.key,
-    required this.child,
-    this.padding,
-    this.elevation = 2,
-    this.borderRadius,
-    this.onTap,
-  });
+  const AppCard({super.key, required this.child, this.padding, this.onTap});
 
   @override
   Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(16);
     return Card(
-      elevation: elevation,
-      shape: RoundedRectangleBorder(
-        borderRadius: borderRadius ?? BorderRadius.circular(12),
-      ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: borderRadius ?? BorderRadius.circular(12),
+        borderRadius: radius,
         child: Padding(
           padding: padding ?? const EdgeInsets.all(16),
           child: child,
@@ -62,6 +52,103 @@ class AppButton extends StatelessWidget {
   }
 }
 
+class StatusPill extends StatelessWidget {
+  final String label;
+  final Color color;
+
+  const StatusPill({super.key, required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(100),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
+      ),
+    );
+  }
+}
+
+class CategoryIconContainer extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final double size;
+
+  const CategoryIconContainer({
+    super.key,
+    required this.icon,
+    required this.color,
+    this.size = 40,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(icon, size: 20, color: color),
+    );
+  }
+}
+
+class CompactRow extends StatelessWidget {
+  final Widget leading;
+  final Widget title;
+  final Widget? subtitle;
+  final Widget? trailing;
+  final VoidCallback? onTap;
+
+  const CompactRow({
+    super.key,
+    required this.leading,
+    required this.title,
+    this.subtitle,
+    this.trailing,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final content = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          leading,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                title,
+                if (subtitle != null) ...[const SizedBox(height: 2), subtitle!],
+              ],
+            ),
+          ),
+          if (trailing != null) ...[const SizedBox(width: 8), trailing!],
+        ],
+      ),
+    );
+
+    if (onTap != null) {
+      return InkWell(onTap: onTap, child: content);
+    }
+    return content;
+  }
+}
+
 class ActivityCard extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -86,15 +173,24 @@ class ActivityCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppCard(
       onTap: onTap,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          Icon(icon, size: 32, color: Theme.of(context).colorScheme.primary),
+          CategoryIconContainer(
+            icon: icon,
+            color: Theme.of(context).colorScheme.primary,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleSmall
+                      ?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 2),
                 Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
               ],
             ),
@@ -104,7 +200,7 @@ class ActivityCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(time, style: Theme.of(context).textTheme.bodySmall),
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
               Text(status, style: Theme.of(context).textTheme.labelSmall),
             ],
           ),
@@ -151,7 +247,11 @@ class SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Text(title, style: Theme.of(context).textTheme.titleLarge),
+      child: Text(
+        title,
+        style: Theme.of(context).textTheme.titleMedium
+            ?.copyWith(fontWeight: FontWeight.w600),
+      ),
     );
   }
 }
@@ -194,9 +294,12 @@ class EmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 48, color: Colors.grey[400]),
+          Icon(icon, size: 48, color: ActivusColors.textTertiary),
           const SizedBox(height: 16),
-          Text(message, style: TextStyle(color: Colors.grey[600])),
+          Text(
+            message,
+            style: const TextStyle(color: ActivusColors.textSecondary),
+          ),
         ],
       ),
     );
@@ -208,7 +311,9 @@ class LoadingState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(child: CircularProgressIndicator());
+    return const Center(
+      child: CircularProgressIndicator(color: ActivusColors.primaryBlue),
+    );
   }
 }
 
@@ -224,7 +329,11 @@ class ErrorState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, size: 48, color: Colors.red),
+          const Icon(
+            Icons.error_outline,
+            size: 48,
+            color: ActivusColors.danger,
+          ),
           const SizedBox(height: 16),
           Text(message),
           if (onRetry != null) ...[

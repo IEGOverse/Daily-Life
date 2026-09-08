@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/theme/app_theme.dart';
+import '../../core/widgets/widgets.dart';
 import '../dashboard/dashboard_providers.dart';
 import 'domain/habit.dart';
 import 'domain/habit_with_status.dart';
@@ -17,6 +19,8 @@ class HabitsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Habits')),
       floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: ActivusColors.primaryBlue,
+        foregroundColor: Colors.white,
         onPressed: () => _openAddHabitDialog(context, ref),
         icon: const Icon(Icons.add),
         label: const Text('Add habit'),
@@ -28,11 +32,11 @@ class HabitsScreen extends ConsumerWidget {
         data: (items) => items.isEmpty
             ? const Center(child: Text('No habits yet.'))
             : ListView.builder(
-                padding: const EdgeInsets.fromLTRB(12, 12, 12, 96),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
                 itemCount: items.length,
                 itemBuilder: (context, index) {
                   final item = items[index];
-                  return _HabitTile(
+                  return _HabitRow(
                     item: item,
                     onToggle: () => _toggle(context, ref, item.habit, now),
                     onDelete: () => _delete(context, ref, item.habit),
@@ -84,8 +88,8 @@ class HabitsScreen extends ConsumerWidget {
   }
 }
 
-class _HabitTile extends StatelessWidget {
-  const _HabitTile({
+class _HabitRow extends StatelessWidget {
+  const _HabitRow({
     required this.item,
     required this.onToggle,
     required this.onDelete,
@@ -99,29 +103,92 @@ class _HabitTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final habit = item.habit;
     final completedToday = item.completedToday;
-    final primary = Theme.of(context).colorScheme.primary;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      child: CheckboxListTile(
-        value: completedToday,
-        onChanged: (_) => onToggle(),
-        controlAffinity: ListTileControlAffinity.leading,
-        activeColor: primary,
-        title: Text(
-          habit.name,
-          style: TextStyle(
-            decoration: completedToday ? TextDecoration.lineThrough : null,
+    return AppCard(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: onToggle,
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color:
+                    (completedToday
+                            ? ActivusColors.success
+                            : ActivusColors.primaryBlue)
+                        .withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                completedToday ? Icons.check : Icons.repeat,
+                size: 20,
+                color: completedToday
+                    ? ActivusColors.success
+                    : ActivusColors.primaryBlue,
+              ),
+            ),
           ),
-        ),
-        subtitle: Text(
-          '${habit.frequency} · target ${habit.target} · '
-          '🔥 ${item.currentStreak} day streak',
-        ),
-        secondary: IconButton(
-          icon: const Icon(Icons.delete_outline),
-          onPressed: onDelete,
-        ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  habit.name,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    decoration: completedToday
+                        ? TextDecoration.lineThrough
+                        : null,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${habit.frequency} · target ${habit.target}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: ActivusColors.textTertiary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '🔥 ${item.currentStreak}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Text(
+                'streak',
+                style: const TextStyle(
+                  fontSize: 10,
+                  color: ActivusColors.textTertiary,
+                ),
+              ),
+            ],
+          ),
+          StatusPill(
+            label: completedToday ? 'Done' : 'Today',
+            color: completedToday
+                ? ActivusColors.success
+                : ActivusColors.textTertiary,
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline, size: 18),
+            onPressed: onDelete,
+            padding: EdgeInsets.zero,
+            visualDensity: VisualDensity.compact,
+          ),
+        ],
       ),
     );
   }

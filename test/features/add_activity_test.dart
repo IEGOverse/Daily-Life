@@ -14,8 +14,8 @@ void main() {
       final database = await _pumpApp(tester);
 
       // Seeding created scheduled activities, so the dashboard timeline has
-      // content. Open the quick-add form.
-      await tester.tap(find.byIcon(Icons.add_circle_outline));
+      // content. Open the quick-add form via the bottom nav + button.
+      await tester.tap(find.byIcon(Icons.add));
       await tester.pumpAndSettle();
 
       expect(find.text('Add Activity'), findsOneWidget);
@@ -55,7 +55,7 @@ void main() {
     ) async {
       final database = await _pumpApp(tester);
 
-      await tester.tap(find.byIcon(Icons.add_circle_outline));
+      await tester.tap(find.byIcon(Icons.add));
       await tester.pumpAndSettle();
 
       // Title is empty -> Save is rejected.

@@ -27,6 +27,7 @@ class DailyLifeApp extends ConsumerWidget {
       title: 'Activus',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.dark,
       routerConfig: router,
     );
   }

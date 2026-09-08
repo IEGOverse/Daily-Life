@@ -1,11 +1,14 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:daily_life/core/navigation/navigation_shell.dart';
 import 'package:daily_life/features/activities/calendar_history_screen.dart';
 import 'package:daily_life/features/dashboard/dashboard_screen.dart';
 import 'package:daily_life/features/schedule/schedule_screen.dart';
 import 'package:daily_life/features/add/add_screen.dart';
 import 'package:daily_life/features/insights/insights_screen.dart';
+import 'package:daily_life/features/more/more_screen.dart';
 import 'package:daily_life/features/workout/add_exercise_screen.dart';
 import 'package:daily_life/features/workout/workout_exercise_detail_screen.dart';
 import 'package:daily_life/features/workout/add_workout_plan_screen.dart';
@@ -24,13 +27,63 @@ import 'package:daily_life/features/nutrition/nutrition_screen.dart';
 import 'package:daily_life/features/habits/habits_screen.dart';
 import 'package:daily_life/features/reminders/reminders_screen.dart';
 
+final _rootNavigatorKey = GlobalKey<NavigatorState>();
+final _todayNavigatorKey = GlobalKey<NavigatorState>();
+final _scheduleNavigatorKey = GlobalKey<NavigatorState>();
+final _insightsNavigatorKey = GlobalKey<NavigatorState>();
+final _moreNavigatorKey = GlobalKey<NavigatorState>();
+
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
+    navigatorKey: _rootNavigatorKey,
     initialLocation: '/today',
     routes: [
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) {
+          return NavigationShell(navigationShell: navigationShell);
+        },
+        branches: [
+          StatefulShellBranch(
+            navigatorKey: _todayNavigatorKey,
+            routes: [
+              GoRoute(
+                path: '/today',
+                builder: (context, state) => const DashboardScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            navigatorKey: _scheduleNavigatorKey,
+            routes: [
+              GoRoute(
+                path: '/schedule',
+                builder: (context, state) => const ScheduleScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            navigatorKey: _insightsNavigatorKey,
+            routes: [
+              GoRoute(
+                path: '/insights',
+                builder: (context, state) => const InsightsScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            navigatorKey: _moreNavigatorKey,
+            routes: [
+              GoRoute(
+                path: '/more',
+                builder: (context, state) => const MoreScreen(),
+              ),
+            ],
+          ),
+        ],
+      ),
       GoRoute(
-        path: '/today',
-        builder: (context, state) => const DashboardScreen(),
+        path: '/add',
+        builder: (context, state) => const AddActivityScreen(),
       ),
       GoRoute(
         path: '/reminders',
@@ -39,18 +92,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/calendar',
         builder: (context, state) => const CalendarHistoryScreen(),
-      ),
-      GoRoute(
-        path: '/schedule',
-        builder: (context, state) => const ScheduleScreen(),
-      ),
-      GoRoute(
-        path: '/add',
-        builder: (context, state) => const AddActivityScreen(),
-      ),
-      GoRoute(
-        path: '/insights',
-        builder: (context, state) => const InsightsScreen(),
       ),
       GoRoute(
         path: '/workout',

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/database/database.dart' as db;
+import '../../core/theme/app_theme.dart';
 import '../../core/widgets/widgets.dart';
 import 'schedule_providers.dart';
 
@@ -28,10 +29,11 @@ class ScheduleScreen extends ConsumerWidget {
     final schedulesAsync = ref.watch(schedulesForDayProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Schedule')),
       body: Column(
         children: [
+          const _Header(),
           _DaySelector(selectedDay: selectedDay, ref: ref),
+          const Divider(),
           Expanded(
             child: schedulesAsync.when(
               loading: () => const LoadingState(),
@@ -51,6 +53,24 @@ class ScheduleScreen extends ConsumerWidget {
   }
 }
 
+class _Header extends StatelessWidget {
+  const _Header();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          'Schedule',
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+        ),
+      ),
+    );
+  }
+}
+
 /// Horizontal row of day-of-week chips; the currently selected day is
 /// highlighted and centered.
 class _DaySelector extends StatelessWidget {
@@ -61,7 +81,6 @@ class _DaySelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     return SizedBox(
       height: 72,
       child: Row(
@@ -76,10 +95,14 @@ class _DaySelector extends StatelessWidget {
                   children: [
                     Text(
                       _dayAbbr[i],
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: i + 1 == selectedDay
+                            ? FontWeight.w600
+                            : FontWeight.w400,
                         color: i + 1 == selectedDay
-                            ? colorScheme.primary
-                            : colorScheme.onSurfaceVariant,
+                            ? ActivusColors.primaryBlue
+                            : ActivusColors.textTertiary,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -89,17 +112,19 @@ class _DaySelector extends StatelessWidget {
                       height: 36,
                       decoration: BoxDecoration(
                         color: i + 1 == selectedDay
-                            ? colorScheme.primary
-                            : colorScheme.surfaceContainerHighest,
+                            ? ActivusColors.primaryBlue
+                            : ActivusColors.surfaceAlt,
                         shape: BoxShape.circle,
                       ),
                       alignment: Alignment.center,
                       child: Text(
                         '${i + 1}',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
                           color: i + 1 == selectedDay
-                              ? colorScheme.onPrimary
-                              : colorScheme.onSurfaceVariant,
+                              ? Colors.white
+                              : ActivusColors.textSecondary,
                         ),
                       ),
                     ),
@@ -113,7 +138,7 @@ class _DaySelector extends StatelessWidget {
   }
 }
 
-/// Scrollable list of schedule cards for the selected day.
+/// Scrollable list of schedule entries for the selected day.
 class _ScheduleList extends StatelessWidget {
   final List<db.Schedule> schedules;
   final String dayName;
@@ -130,36 +155,39 @@ class _ScheduleList extends StatelessWidget {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
       itemCount: schedules.length,
       itemBuilder: (context, index) {
         final schedule = schedules[index];
         return Padding(
           padding: const EdgeInsets.only(bottom: 8),
-          child: _ScheduleCard(schedule: schedule),
+          child: _ScheduleRow(schedule: schedule),
         );
       },
     );
   }
 }
 
-/// A single schedule entry card showing time range, title, and class icon.
-class _ScheduleCard extends StatelessWidget {
+/// A compact schedule row: category icon container, time range, title.
+class _ScheduleRow extends StatelessWidget {
   final db.Schedule schedule;
 
-  const _ScheduleCard({required this.schedule});
+  const _ScheduleRow({required this.schedule});
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     final startTime = _parseTime(schedule.startTime);
     final endTime = _parseTime(schedule.endTime);
     final timeDisplay = '${_formatTime(startTime)} – ${_formatTime(endTime)}';
 
     return AppCard(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          Icon(Icons.school_outlined, size: 32, color: colorScheme.primary),
+          const CategoryIconContainer(
+            icon: Icons.school_outlined,
+            color: ActivusColors.primaryBlue,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -167,18 +195,27 @@ class _ScheduleCard extends StatelessWidget {
               children: [
                 Text(
                   schedule.title,
-                  style: Theme.of(context).textTheme.titleMedium,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   timeDisplay,
-                  style: Theme.of(context).textTheme.bodySmall
-                      ?.copyWith(color: colorScheme.onSurfaceVariant),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: ActivusColors.textSecondary,
+                  ),
                 ),
               ],
             ),
           ),
-          Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant),
+          const Icon(
+            Icons.chevron_right,
+            size: 18,
+            color: ActivusColors.textTertiary,
+          ),
         ],
       ),
     );

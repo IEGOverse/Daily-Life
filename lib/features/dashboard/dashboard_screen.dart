@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/theme/app_theme.dart';
 import '../../core/widgets/widgets.dart';
 import '../activities/activity_providers.dart';
 import '../activities/domain/activity.dart';
@@ -34,23 +35,65 @@ IconData iconForCategory(String category) {
   }
 }
 
+Color _colorForCategory(String category) {
+  switch (category.trim().toLowerCase()) {
+    case 'study':
+      return ActivusColors.primaryBlue;
+    case 'workout':
+    case 'exercise':
+      return ActivusColors.category;
+    case 'finance':
+    case 'money':
+      return ActivusColors.success;
+    case 'meal':
+    case 'nutrition':
+      return ActivusColors.category2;
+    default:
+      return ActivusColors.primaryBlueLight;
+  }
+}
+
+Color _statusColor(ActivityStatus status) {
+  switch (status) {
+    case ActivityStatus.completed:
+      return ActivusColors.statusCompleted;
+    case ActivityStatus.inProgress:
+      return ActivusColors.statusInProgress;
+    case ActivityStatus.skipped:
+      return ActivusColors.statusSoon;
+    case ActivityStatus.upcoming:
+    case ActivityStatus.scheduled:
+      return ActivusColors.statusUpcoming;
+  }
+}
+
+String _statusLabel(ActivityStatus status, bool isCurrent, bool isUpcoming) {
+  switch (status) {
+    case ActivityStatus.completed:
+      return 'Completed';
+    case ActivityStatus.skipped:
+      return 'Skipped';
+    case ActivityStatus.inProgress:
+      return 'In Progress';
+    case ActivityStatus.upcoming:
+    case ActivityStatus.scheduled:
+      if (isCurrent) return 'In Progress';
+      if (isUpcoming) return 'Soon';
+      return 'Upcoming';
+  }
+}
+
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final summaryAsync = ref.watch(dashboardSummaryProvider);
+    final studyMinutes = ref.watch(todayStudyMinutesProvider);
+    final nutritionAsync = ref.watch(todayNutritionSummaryProvider);
+    final now = ref.watch(clockProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Activus'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () => context.push('/reminders'),
-          ),
-        ],
-      ),
       body: summaryAsync.when(
         loading: () => const LoadingState(),
         error: (e, _) => ErrorState(
@@ -59,7 +102,12 @@ class DashboardScreen extends ConsumerWidget {
         ),
         data: (summary) => RefreshIndicator(
           onRefresh: () async => ref.invalidate(dashboardSummaryProvider),
-          child: _TodayContent(summary: summary, now: ref.watch(clockProvider)),
+          child: _TodayContent(
+            summary: summary,
+            now: now,
+            studyMinutes: studyMinutes,
+            nutritionAsync: nutritionAsync,
+          ),
         ),
       ),
     );
@@ -69,8 +117,15 @@ class DashboardScreen extends ConsumerWidget {
 class _TodayContent extends StatelessWidget {
   final DashboardSummary summary;
   final DateTime now;
+  final AsyncValue<int> studyMinutes;
+  final AsyncValue<Map<String, dynamic>> nutritionAsync;
 
-  const _TodayContent({required this.summary, required this.now});
+  const _TodayContent({
+    required this.summary,
+    required this.now,
+    required this.studyMinutes,
+    required this.nutritionAsync,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -78,81 +133,83 @@ class _TodayContent extends StatelessWidget {
     final next = summary.nextActivityAfter(now);
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       children: [
-        _Greeting(day: now),
-        const SizedBox(height: 16),
-        _DailyProgress(summary: summary),
+        _GreetingHeader(day: now),
+        const SizedBox(height: 20),
+        _DailyProgressGauge(summary: summary, now: now),
         if (current != null) ...[
           const SizedBox(height: 16),
-          _CurrentActivity(activity: current),
+          _NowCard(activity: current),
         ],
         if (next != null) ...[
-          const SizedBox(height: 16),
-          _NextUp(activity: next),
+          const SizedBox(height: 12),
+          _NextUpCard(activity: next),
         ],
-        const SizedBox(height: 16),
-        const SectionHeader(title: "Today's Timeline"),
-        const SizedBox(height: 4),
+        const SizedBox(height: 20),
+        _SectionTitle(title: "Today's Timeline"),
+        const SizedBox(height: 8),
         if (summary.totalActivities == 0)
           const EmptyState(message: 'Nothing planned today.', icon: Icons.event)
         else
           _Timeline(activities: summary.activities, now: now),
-        const SizedBox(height: 16),
-        const SectionHeader(title: 'Finance'),
-        const SizedBox(height: 4),
-        _FinanceSummary(finance: summary.finance),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
+        _CompactFinanceSummary(finance: summary.finance),
+        const SizedBox(height: 12),
+        _CompactStudySummary(studyMinutes: studyMinutes),
+        const SizedBox(height: 12),
+        _CompactNutritionSummary(nutritionAsync: nutritionAsync),
+        const SizedBox(height: 80),
       ],
     );
   }
 }
 
-class _Greeting extends StatelessWidget {
+class _GreetingHeader extends StatelessWidget {
   final DateTime day;
 
-  const _Greeting({required this.day});
+  const _GreetingHeader({required this.day});
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
-        Text(_greetingFor(day.hour), style: textTheme.headlineMedium),
-        const SizedBox(height: 4),
-        Row(
-          children: [
-            Flexible(
-              child: Text(_formatDate(day), style: textTheme.bodyMedium),
-            ),
-            const SizedBox(width: 8),
-            IconButton(
-              tooltip: 'Quick add activity',
-              icon: const Icon(Icons.add_circle_outline),
-              visualDensity: VisualDensity.compact,
-              onPressed: () => context.push('/add'),
-            ),
-            const SizedBox(width: 4),
-            IconButton(
-              tooltip: 'Calendar & history',
-              icon: const Icon(Icons.calendar_month_outlined),
-              visualDensity: VisualDensity.compact,
-              onPressed: () => context.push('/calendar'),
-            ),
-          ],
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _greetingFor(day.hour),
+                style: Theme.of(context).textTheme.headlineMedium
+                    ?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _formatDate(day),
+                style: Theme.of(context).textTheme.bodyMedium
+                    ?.copyWith(color: ActivusColors.textSecondary),
+              ),
+            ],
+          ),
+        ),
+        _SmallIconButton(
+          icon: Icons.calendar_month_outlined,
+          tooltip: 'Calendar & history',
+          onTap: () => context.push('/calendar'),
+        ),
+        const SizedBox(width: 4),
+        _SmallIconButton(
+          icon: Icons.notifications_outlined,
+          tooltip: 'Reminders',
+          onTap: () => context.push('/reminders'),
         ),
       ],
     );
   }
 
   String _greetingFor(int hour) {
-    if (hour < 12) {
-      return 'Good morning';
-    }
-    if (hour < 18) {
-      return 'Good afternoon';
-    }
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
     return 'Good evening';
   }
 
@@ -184,42 +241,109 @@ class _Greeting extends StatelessWidget {
   }
 }
 
-class _DailyProgress extends StatelessWidget {
-  final DashboardSummary summary;
+class _SmallIconButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
 
-  const _DailyProgress({required this.summary});
+  const _SmallIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: ActivusColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: ActivusColors.border, width: 1),
+      ),
+      child: IconButton(
+        tooltip: tooltip,
+        icon: Icon(icon, size: 20),
+        onPressed: onTap,
+        padding: EdgeInsets.zero,
+        visualDensity: VisualDensity.compact,
+      ),
+    );
+  }
+}
+
+class _DailyProgressGauge extends StatelessWidget {
+  final DashboardSummary summary;
+  final DateTime now;
+
+  const _DailyProgressGauge({required this.summary, required this.now});
+
+  @override
+  Widget build(BuildContext context) {
     final percent = (summary.progress * 100).round();
+    final remaining = summary.totalActivities - summary.completedActivities;
+    final inProgress = summary.activities
+        .where((a) => a.status == ActivityStatus.inProgress)
+        .length;
+
     return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Daily Progress',
-                style: Theme.of(context).textTheme.titleSmall,
+          SizedBox(
+            width: 80,
+            height: 80,
+            child: CustomPaint(
+              painter: _GaugePainter(
+                progress: summary.progress,
+                color: ActivusColors.primaryBlue,
+                bgColor: ActivusColors.border,
               ),
-              Text('$percent%', style: Theme.of(context).textTheme.titleSmall),
-            ],
-          ),
-          const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: LinearProgressIndicator(
-              value: summary.progress,
-              minHeight: 8,
-              backgroundColor: colorScheme.surfaceContainerHighest,
+              child: Center(
+                child: Text(
+                  '$percent%',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: ActivusColors.primaryBlue,
+                  ),
+                ),
+              ),
             ),
           ),
-          const SizedBox(height: 12),
-          Text(
-            '${summary.completedActivities} of ${summary.totalActivities} activities completed',
-            style: Theme.of(context).textTheme.bodySmall,
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Daily Progress',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    _ProgressStat(
+                      label: 'Done',
+                      value: '${summary.completedActivities}',
+                      color: ActivusColors.success,
+                    ),
+                    const SizedBox(width: 12),
+                    _ProgressStat(
+                      label: 'In progress',
+                      value: '$inProgress',
+                      color: ActivusColors.primaryBlue,
+                    ),
+                    const SizedBox(width: 12),
+                    _ProgressStat(
+                      label: 'Remaining',
+                      value: '$remaining',
+                      color: ActivusColors.textTertiary,
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -227,38 +351,124 @@ class _DailyProgress extends StatelessWidget {
   }
 }
 
-class _CurrentActivity extends StatelessWidget {
-  final Activity activity;
+class _ProgressStat extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
 
-  const _CurrentActivity({required this.activity});
+  const _ProgressStat({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: color,
+          ),
+        ),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            color: ActivusColors.textTertiary,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _GaugePainter extends CustomPainter {
+  final double progress;
+  final Color color;
+  final Color bgColor;
+
+  _GaugePainter({
+    required this.progress,
+    required this.color,
+    required this.bgColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2 - 6;
+
+    final bgPaint = Paint()
+      ..color = bgColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 6;
+
+    canvas.drawCircle(center, radius, bgPaint);
+
+    final fgPaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 6
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -3.14159265 / 2,
+      2 * 3.14159265 * progress,
+      false,
+      fgPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _GaugePainter oldDelegate) =>
+      oldDelegate.progress != progress;
+}
+
+class _NowCard extends StatelessWidget {
+  final Activity activity;
+
+  const _NowCard({required this.activity});
+
+  @override
+  Widget build(BuildContext context) {
     return AppCard(
+      padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          Icon(Icons.play_circle_fill, size: 36, color: colorScheme.primary),
+          CategoryIconContainer(
+            icon: iconForCategory(activity.category),
+            color: ActivusColors.statusInProgress,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'NOW',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: colorScheme.primary,
-                    fontWeight: FontWeight.bold,
-                  ),
+                const StatusPill(
+                  label: 'NOW',
+                  color: ActivusColors.statusInProgress,
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 6),
                 Text(
                   activity.title,
-                  style: Theme.of(context).textTheme.titleMedium,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
+                const SizedBox(height: 2),
                 Text(
                   _timeRange(activity),
-                  style: Theme.of(context).textTheme.bodySmall,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: ActivusColors.textSecondary,
+                  ),
                 ),
               ],
             ),
@@ -269,43 +479,57 @@ class _CurrentActivity extends StatelessWidget {
   }
 }
 
-class _NextUp extends StatelessWidget {
+class _NextUpCard extends StatelessWidget {
   final Activity activity;
 
-  const _NextUp({required this.activity});
+  const _NextUpCard({required this.activity});
 
   @override
   Widget build(BuildContext context) {
     return AppCard(
+      padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          Icon(
-            iconForCategory(activity.category),
-            size: 32,
-            color: Theme.of(context).colorScheme.secondary,
+          CategoryIconContainer(
+            icon: iconForCategory(activity.category),
+            color: _colorForCategory(activity.category),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'NEXT UP',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: Theme.of(context).colorScheme.secondary,
-                    fontWeight: FontWeight.bold,
-                  ),
+                const StatusPill(
+                  label: 'NEXT UP',
+                  color: ActivusColors.warning,
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 6),
                 Text(
-                  '${_formatTime(activity.startTime)} - ${activity.title}',
-                  style: Theme.of(context).textTheme.bodyLarge,
+                  '${_formatTime(activity.startTime)} · ${activity.title}',
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  final String title;
+
+  const _SectionTitle({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
     );
   }
 }
@@ -321,47 +545,89 @@ class _Timeline extends ConsumerWidget {
     return Column(
       children: [
         for (final activity in activities) ...[
-          ActivityCard(
-            title: activity.title,
-            subtitle: activity.notes ?? activity.category,
-            time: _timeRange(activity),
-            status: _statusLabel(activity, now),
-            icon: iconForCategory(activity.category),
-            trailing: _CompletionActions(
-              activity: activity,
-              onDone: () => _setStatus(ref, activity, ActivityStatus.completed),
-              onSkip: () => _setStatus(ref, activity, ActivityStatus.skipped),
-              onReset: () =>
-                  _setStatus(ref, activity, ActivityStatus.scheduled),
-            ),
+          _TimelineRow(
+            activity: activity,
+            now: now,
+            onDone: () => _setStatus(ref, activity, ActivityStatus.completed),
+            onSkip: () => _setStatus(ref, activity, ActivityStatus.skipped),
+            onReset: () => _setStatus(ref, activity, ActivityStatus.scheduled),
           ),
-          const SizedBox(height: 8),
+          if (activity != activities.last) const SizedBox(height: 4),
         ],
       ],
     );
   }
+}
 
-  String _statusLabel(Activity activity, DateTime now) {
-    if (activity.status == ActivityStatus.completed) {
-      return 'Completed';
-    }
-    if (activity.status == ActivityStatus.skipped) {
-      return 'Skipped';
-    }
-    if (activity.isCurrentAt(now)) {
-      return 'In Progress';
-    }
-    if (activity.isUpcomingAfter(now)) {
-      return 'Upcoming';
-    }
-    return 'Scheduled';
+class _TimelineRow extends StatelessWidget {
+  final Activity activity;
+  final DateTime now;
+  final VoidCallback onDone;
+  final VoidCallback onSkip;
+  final VoidCallback onReset;
+
+  const _TimelineRow({
+    required this.activity,
+    required this.now,
+    required this.onDone,
+    required this.onSkip,
+    required this.onReset,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isCurrent = activity.isCurrentAt(now);
+    final isUpcoming = activity.isUpcomingAfter(now);
+    final label = _statusLabel(activity.status, isCurrent, isUpcoming);
+    final statusColor = _statusColor(activity.status);
+    final color = _colorForCategory(activity.category);
+
+    return AppCard(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          CategoryIconContainer(
+            icon: iconForCategory(activity.category),
+            color: color,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  activity.title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _timeRange(activity),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: ActivusColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          StatusPill(label: label, color: statusColor),
+          const SizedBox(width: 8),
+          _CompletionActions(
+            activity: activity,
+            onDone: onDone,
+            onSkip: onSkip,
+            onReset: onReset,
+          ),
+        ],
+      ),
+    );
   }
 }
 
-/// Inline complete / skip / reset actions for a timeline activity.
-///
-/// For future/open-now activities a two-button row (Done / Skip) is shown;
-/// for completed/skipped activities a single reset button restores Scheduled.
 class _CompletionActions extends StatelessWidget {
   final Activity activity;
   final VoidCallback onDone;
@@ -377,32 +643,32 @@ class _CompletionActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (activity.status == ActivityStatus.completed) {
+    if (activity.status == ActivityStatus.completed ||
+        activity.status == ActivityStatus.skipped) {
       return IconButton(
         tooltip: 'Reset',
-        icon: const Icon(Icons.refresh),
+        icon: const Icon(Icons.refresh, size: 18),
         onPressed: onReset,
-      );
-    }
-    if (activity.status == ActivityStatus.skipped) {
-      return IconButton(
-        tooltip: 'Reset',
-        icon: const Icon(Icons.refresh),
-        onPressed: onReset,
+        padding: EdgeInsets.zero,
+        visualDensity: VisualDensity.compact,
       );
     }
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         IconButton(
-          tooltip: 'Mark done',
-          icon: const Icon(Icons.check_circle_outline),
+          tooltip: 'Done',
+          icon: const Icon(Icons.check_circle_outline, size: 18),
           onPressed: onDone,
+          padding: EdgeInsets.zero,
+          visualDensity: VisualDensity.compact,
         ),
         IconButton(
           tooltip: 'Skip',
-          icon: const Icon(Icons.remove_circle_outline),
+          icon: const Icon(Icons.remove_circle_outline, size: 18),
           onPressed: onSkip,
+          padding: EdgeInsets.zero,
+          visualDensity: VisualDensity.compact,
         ),
       ],
     );
@@ -419,51 +685,171 @@ Future<void> _setStatus(
   ref.invalidate(activitiesForDayProvider);
 }
 
-class _FinanceSummary extends StatelessWidget {
+class _CompactFinanceSummary extends StatelessWidget {
   final FinanceSummary finance;
 
-  const _FinanceSummary({required this.finance});
+  const _CompactFinanceSummary({required this.finance});
 
   @override
   Widget build(BuildContext context) {
-    if (finance.income == 0 && finance.expense == 0) {
-      return const EmptyState(
-        message: 'No transactions today.',
-        icon: Icons.account_balance_wallet_outlined,
-      );
-    }
-    return Row(
-      children: [
-        Expanded(
-          child: StatCard(
-            label: 'Balance',
-            value: _formatAmount(finance.balance),
+    return AppCard(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      onTap: () => context.push('/finance'),
+      child: Row(
+        children: [
+          const CategoryIconContainer(
             icon: Icons.account_balance_wallet_outlined,
+            color: ActivusColors.success,
           ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: StatCard(
-            label: 'Income',
-            value: _formatAmount(finance.income),
-            icon: Icons.south_west,
+          const SizedBox(width: 12),
+          const Text(
+            'Finance',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: StatCard(
-            label: 'Spent',
-            value: _formatAmount(finance.expense),
-            icon: Icons.north_east,
+          const Spacer(),
+          if (finance.income == 0 && finance.expense == 0)
+            const Text(
+              'No transactions today',
+              style: TextStyle(fontSize: 13, color: ActivusColors.textTertiary),
+            )
+          else
+            Text(
+              _formatAmount(finance.balance),
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: finance.balance < 0
+                    ? ActivusColors.danger
+                    : ActivusColors.success,
+              ),
+            ),
+          const SizedBox(width: 4),
+          const Icon(
+            Icons.chevron_right,
+            size: 18,
+            color: ActivusColors.textTertiary,
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   String _formatAmount(int value) {
-    final sign = value < 0 ? '-' : '';
-    return '$sign\$${value.abs()}';
+    final s = value.abs().toString();
+    final buf = StringBuffer();
+    for (var i = 0; i < s.length; i++) {
+      buf.write(s[i]);
+      final rem = s.length - i - 1;
+      if (rem > 0 && rem % 3 == 0) buf.write('.');
+    }
+    return '${value < 0 ? '-' : ''}Rp $buf';
+  }
+}
+
+class _CompactStudySummary extends StatelessWidget {
+  final AsyncValue<int> studyMinutes;
+
+  const _CompactStudySummary({required this.studyMinutes});
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      onTap: () => context.push('/study'),
+      child: Row(
+        children: [
+          const CategoryIconContainer(
+            icon: Icons.school_outlined,
+            color: ActivusColors.primaryBlue,
+          ),
+          const SizedBox(width: 12),
+          const Text(
+            'Study',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          ),
+          const Spacer(),
+          studyMinutes.when(
+            loading: () => const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            error: (_, _) => const Text(
+              '—',
+              style: TextStyle(fontSize: 13, color: ActivusColors.textTertiary),
+            ),
+            data: (minutes) => Text(
+              minutes > 0 ? '${minutes}m today' : 'No sessions today',
+              style: const TextStyle(
+                fontSize: 13,
+                color: ActivusColors.textSecondary,
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+          const Icon(
+            Icons.chevron_right,
+            size: 18,
+            color: ActivusColors.textTertiary,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CompactNutritionSummary extends StatelessWidget {
+  final AsyncValue<Map<String, dynamic>> nutritionAsync;
+
+  const _CompactNutritionSummary({required this.nutritionAsync});
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      onTap: () => context.push('/nutrition'),
+      child: Row(
+        children: [
+          const CategoryIconContainer(
+            icon: Icons.restaurant_outlined,
+            color: ActivusColors.category2,
+          ),
+          const SizedBox(width: 12),
+          const Text(
+            'Nutrition',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          ),
+          const Spacer(),
+          nutritionAsync.when(
+            loading: () => const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            error: (_, _) => const Text(
+              '—',
+              style: TextStyle(fontSize: 13, color: ActivusColors.textTertiary),
+            ),
+            data: (s) {
+              final kcal = (s['calories'] as num).toDouble().round();
+              return Text(
+                kcal > 0 ? '$kcal kcal' : 'No meals today',
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: ActivusColors.textSecondary,
+                ),
+              );
+            },
+          ),
+          const SizedBox(width: 4),
+          const Icon(
+            Icons.chevron_right,
+            size: 18,
+            color: ActivusColors.textTertiary,
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -472,7 +858,7 @@ String _timeRange(Activity activity) {
   if (end == null) {
     return _formatTime(activity.startTime);
   }
-  return '${_formatTime(activity.startTime)} - ${_formatTime(end)}';
+  return '${_formatTime(activity.startTime)} – ${_formatTime(end)}';
 }
 
 String _formatTime(DateTime t) {

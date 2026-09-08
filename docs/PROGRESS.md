@@ -4,10 +4,10 @@
 > The repository, Git history, and this file are authoritative. Do not rely on previous chat memory.
 
 ## Current Phase
-Phase 7 — Smart Features (IN PROGRESS — implementation complete, checkpoint in progress)
+Phase 8 (UI/UX Polish) — COMPLETE (checkpoint in progress)
 
 ## Current Sprint
-Sprint 7 — Smart Features (IN PROGRESS)
+Sprint 8 — UI Polish (COMPLETE)
 
 ## Overall Status
 IN PROGRESS
@@ -33,6 +33,7 @@ IN PROGRESS
 - [x] Phase 2 Task 4 — Set logging (`WorkoutSetLogRepository`, concurrent-safe single-flight materialization, reps/weight editing, `/workout/sessions/:sessionId/sets` screen)
 - [x] Phase 2 Task 5 — Workout history (completed-session summary, total minutes, completed-set count, chronological completed-workout list, `/workout/history`)
 - [x] Phase 7 — Smart Features (notifications, meal recommendations, local personal insights; validation; docs; checkpoint) — implemented, validation passed
+- [x] Phase 8 — UI/UX Polish (dark-first Activus design system, bottom nav Today/Schedule/+/Insights/More, dashboard/schedule/finance/nutrition/habits/insights/more refinement, compact rows, finance segment filter) — implemented, validated, checkpoint in progress
 
 ## Sprint 0 Checklist
 - [x] Verify Flutter/Dart installation
@@ -61,13 +62,53 @@ IN PROGRESS
 ## Verification Results
 - `dart analyze lib/ test/`: No issues found
 - `dart format --output=none lib test`: clean
-- `flutter test`: 130 tests pass (110 prior + 20 Phase 7: reminders, recommendations, insight generator)
+- `flutter test`: 135 tests pass (130 Phase 7 + 5 Phase 8: more screen flow, bottom-nav tab switching, finance segment filter)
 - `flutter build bundle`: exit 0
 - `flutter build apk --debug`: exit 0
 - `build_runner`: generates successfully
 
 ## Current Task
-Phase 7 — Smart Features fully implemented and validated; checkpoint commit pending.
+Phase 8 — UI/UX Polish fully implemented and validated; checkpoint commit pending.
+
+## Phase 8 — UI/UX Polish Status
+COMPLETE — dark-first Activus design system and full interface polish delivered
+and validated (Scope 4.1 Status Bar intentionally NOT modified; no new
+features added).
+
+- Theme: `ActivusColors` token class (bg `#0A0E1A`, surface `#131A2C`, surfaceAlt
+  `#1A2236`, border `#232B40`, primary `#3B82F6`, success `#22C55E`, danger
+  `#EF4444`, warning `#F59E0B`, category accents `#8B5CF6`/`#06B6D4`); dark-first
+  light/dark themes; main.dart sets `themeMode: ThemeMode.dark`
+- Components: AppCard (16 px radius, 1 px border, no elevation), StatusPill,
+  CategoryIconContainer (40x40), CompactRow, SectionHeader, CategoryChip,
+  empty/loading/error states
+- Routing: `StatefulShellRoute.indexedStack` with Today/Schedule/Insights/More
+  branches (per-branch keys) via `lib/core/navigation/navigation_shell.dart`
+  custom bottom nav (Today | Schedule | center circular "+"→`/add` | Insights |
+  More; inactive gray, active primary blue); all existing routes preserved
+  (`/add`, `/reminders`, `/calendar`, `/workout`+nested, `/study`+nested,
+  `/finance`, `/nutrition`, `/habits`)
+- Dashboard: greeting+date header with calendar+notification affordances,
+  circular Daily Progress gauge (Done/In progress/Remaining), NOW, NEXT UP,
+  compact timeline rows with status pills + done/skip/reset actions,
+  compact Finance/Study/Nutrition summaries (new `todayStudyMinutesProvider`,
+  `todayNutritionSummaryProvider`)
+- Schedule: in-body header, 7-day selector strip (circular day numbers),
+  compact agenda rows
+- Finance: balance card, All/Income/Expense segment filter (now wired to filter
+  the transaction list), compact rows + edit/delete, add/edit dialog
+- Nutrition: circular kcal gauge vs target + macro legend, compact meal rows,
+  Phase 7 meal recommendations kept (non-dominant)
+- Habits: compact rows (toggle icon container, cadence/target, streak pill,
+  add/delete)
+- Insights: Overview/Analytics/Trends segmented control, circular daily-score
+  gauge with task/habit split, weekly summary, time distribution, Phase 7
+  personal insights + module links preserved
+- More: new `/more` tab with Profile, Settings (→ `/reminders`), Data & Sync
+  (local only), Theme (dark default), Help & Support, About Activus dialog
+- Tests: added more-screen flow + bottom-nav + finance segment filter tests;
+  updated add_activity (nav "+"), dashboard (study/nutrition provider
+  overrides), insights (Analytics tab + label count)
 
 ## Phase 4 — Finance Status
 COMPLETE — income/expense transactions, categories, real-time derived balance,
@@ -160,7 +201,7 @@ validated; checkpoint commit in progress.
 - Recurrence/occurrence strategy not finalized (Phase 3+).
 - Phase 7 processed entirely on-device; no external AI/cloud usage.
 - Daily Score rule documented in DATABASE.md §4 (transparent; taskScore + habitScore).
-- Next roadmap checkpoint: Phase 8 — Portfolio / Production (refactoring,
+- Next roadmap checkpoint: Phase 9 — Portfolio / Production (refactoring,
   automated tests hardening, performance checks, security review, README,
   architecture documentation, screenshots, demo video, release APK).
 
@@ -174,5 +215,6 @@ If an agent/session stops unexpectedly:
 6. Commit only when the increment is stable.
 
 ## Last Updated
-2026-09-08 Phase 7 Smart Features complete (notifications, meal
-recommendations, local personal insights; validation passed; checkpoint in progress).
+2026-09-08 Phase 8 UI/UX polish complete (dark-first theme, bottom nav
+Today/Schedule/+/Insights/More, dashboard/schedule/finance/nutrition/habits/
+insights/more polish; 135 tests; bundle + debug APK build; checkpoint in progress).

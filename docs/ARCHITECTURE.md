@@ -105,11 +105,18 @@ Future:
 - Handle conflicts explicitly if multi-device support is ever added
 
 ## 9. Navigation
-Primary destinations:
-- Today
-- Schedule
-- Add
-- Insights
+GoRouter with a `StatefulShellRoute.indexedStack`; the four shell branches keep
+their own navigator state:
+- Today (`/today`)
+- Schedule (`/schedule`)
+- Insights (`/insights`)
+- More (`/more`)
+
+A custom bottom nav renders the shell: Today | Schedule | + (center, circular,
+opens `/add`) | Insights | More. `/add`, `/reminders`, `/calendar`, and the
+module routes (`/workout` (+ nested), `/study` (+ nested), `/finance`,
+`/nutrition`, `/habits`) are root-level routes pushed above the shell from
+`lib/core/navigation/navigation_shell.dart`.
 
 Secondary:
 - Profile

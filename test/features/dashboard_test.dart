@@ -241,6 +241,10 @@ void main() {
           overrides: [
             clockProvider.overrideWithValue(DateTime(2026, 9, 8, 12)),
             dashboardSummaryProvider.overrideWith((ref) async => summary),
+            todayStudyMinutesProvider.overrideWith((ref) async => 0),
+            todayNutritionSummaryProvider.overrideWith(
+              (ref) async => _emptyNutrition(),
+            ),
           ],
           child: const MaterialApp(home: DashboardScreen()),
         ),
@@ -248,7 +252,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text("Nothing planned today."), findsOneWidget);
-      expect(find.text('No transactions today.'), findsOneWidget);
+      expect(find.text('No transactions today'), findsOneWidget);
       expect(find.text('Daily Progress'), findsOneWidget);
     });
 
@@ -280,6 +284,10 @@ void main() {
           overrides: [
             clockProvider.overrideWithValue(DateTime(2026, 9, 8, 12)),
             dashboardSummaryProvider.overrideWith((ref) async => summary),
+            todayStudyMinutesProvider.overrideWith((ref) async => 0),
+            todayNutritionSummaryProvider.overrideWith(
+              (ref) async => _emptyNutrition(),
+            ),
           ],
           child: const MaterialApp(home: DashboardScreen()),
         ),
@@ -318,6 +326,10 @@ void main() {
             // Sunday the 6th: the recurring week-generation adds no classes,
             // so this day contains exactly the inserted activity.
             clockProvider.overrideWithValue(DateTime(2026, 9, 6, 9, 30)),
+            todayStudyMinutesProvider.overrideWith((ref) async => 0),
+            todayNutritionSummaryProvider.overrideWith(
+              (ref) async => _emptyNutrition(),
+            ),
           ],
           child: const MaterialApp(home: DashboardScreen()),
         ),
@@ -342,3 +354,12 @@ void main() {
     });
   });
 }
+
+/// A minimal nutrition summary map representing an empty day.
+Map<String, dynamic> _emptyNutrition() => {
+  'calories': 0.0,
+  'protein': 0.0,
+  'carbohydrate': 0.0,
+  'fat': 0.0,
+  'meals': <dynamic>[],
+};

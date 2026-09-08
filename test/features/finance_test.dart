@@ -1,4 +1,5 @@
 import 'package:drift/native.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:daily_life/core/database/database.dart' as db;
@@ -180,6 +181,84 @@ void main() {
 
       expect(find.text('Finance'), findsOneWidget);
       expect(find.text('No transactions yet.'), findsOneWidget);
+    });
+
+    testWidgets('segment filter narrows the transaction list', (tester) async {
+      final container = ProviderContainer(
+        overrides: [inMemoryDatabaseOverride()],
+      );
+      addTearDown(container.dispose);
+      final database = container.read(databaseProvider);
+      addTearDown(database.close);
+
+      await database.insertTransaction(
+        db.Transaction(
+          id: 'inc',
+          type: 'income',
+          category: 'salary',
+          amount: 100,
+          date: DateTime(2026, 9, 8),
+          createdAt: DateTime.now(),
+        ),
+      );
+      await database.insertTransaction(
+        db.Transaction(
+          id: 'exp',
+          type: 'expense',
+          category: 'food',
+          amount: 50,
+          date: DateTime(2026, 9, 8),
+          createdAt: DateTime.now(),
+        ),
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const DailyLifeApp(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      container.read(appRouterProvider).go('/finance');
+      await tester.pumpAndSettle();
+
+      // All: both categories are listed.
+      expect(find.text('salary'), findsOneWidget);
+      expect(find.text('food'), findsOneWidget);
+
+      // Income: only the income row remains.
+      await tester.tap(
+        find.descendant(
+          of: find.byKey(const ValueKey('finance-filter')),
+          matching: find.text('Income'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('salary'), findsOneWidget);
+      expect(find.text('food'), findsNothing);
+
+      // Expense: only the expense row remains.
+      await tester.tap(
+        find.descendant(
+          of: find.byKey(const ValueKey('finance-filter')),
+          matching: find.text('Expense'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('food'), findsOneWidget);
+      expect(find.text('salary'), findsNothing);
+
+      // Back to All restores both rows.
+      await tester.tap(
+        find.descendant(
+          of: find.byKey(const ValueKey('finance-filter')),
+          matching: find.text('All'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('salary'), findsOneWidget);
+      expect(find.text('food'), findsOneWidget);
     });
   });
 }

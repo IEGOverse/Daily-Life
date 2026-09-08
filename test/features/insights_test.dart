@@ -496,7 +496,11 @@ void main() {
       container.read(appRouterProvider).go('/insights');
       await tester.pumpAndSettle();
 
-      expect(find.text('Insights'), findsOneWidget);
+      expect(find.text('Insights'), findsNWidgets(2)); // header + bottom nav
+
+      // The time-distribution card lives on the Analytics tab.
+      await tester.tap(find.text('Analytics'));
+      await tester.pumpAndSettle();
 
       final scrollable = find.byType(Scrollable).first;
       await tester.scrollUntilVisible(

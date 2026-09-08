@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/theme/app_theme.dart';
+import '../../core/widgets/widgets.dart';
 import 'domain/food.dart';
 import 'domain/meal.dart';
 import 'domain/meal_food.dart';
@@ -20,6 +22,8 @@ class NutritionScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Nutrition')),
       floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: ActivusColors.primaryBlue,
+        foregroundColor: Colors.white,
         onPressed: () => _openAddMealDialog(context, ref, day),
         icon: const Icon(Icons.add),
         label: const Text('Add meal'),
@@ -28,17 +32,19 @@ class NutritionScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => const Center(child: Text('Failed to load nutrition.')),
         data: (s) => ListView(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 96),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
           children: [
             _NutritionSummary(summary: s),
-            const SizedBox(height: 16),
-            Text('Meals', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
+            const SizedBox(height: 20),
+            _SectionLabel(label: 'Meals'),
             if ((s['meals'] as List).isEmpty)
-              const Center(child: Text('No meals recorded today yet.'))
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Center(child: Text('No meals recorded today yet.')),
+              )
             else
               for (final mealEntry in s['meals'] as List)
-                _MealCard(
+                _MealRow(
                   mealEntry: mealEntry,
                   onDelete: () async {
                     final repo = ref.read(nutritionRepositoryProvider);
@@ -47,13 +53,13 @@ class NutritionScreen extends ConsumerWidget {
                     ref.invalidate(dailyNutritionProvider(day));
                   },
                 ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             _MealSuggestionsCard(suggestions: suggestions),
             const SizedBox(height: 16),
             Text(
               'Nutrition values are estimates, not medical-grade measurements.',
               style: Theme.of(context).textTheme.bodySmall
-                  ?.copyWith(color: Theme.of(context).hintColor),
+                  ?.copyWith(color: ActivusColors.textTertiary),
             ),
           ],
         ),
@@ -92,6 +98,20 @@ class NutritionScreen extends ConsumerWidget {
   }
 }
 
+class _SectionLabel extends StatelessWidget {
+  final String label;
+
+  const _SectionLabel({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label,
+      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+    );
+  }
+}
+
 class _NutritionSummary extends StatelessWidget {
   const _NutritionSummary({required this.summary});
 
@@ -104,58 +124,69 @@ class _NutritionSummary extends StatelessWidget {
     final carbs = (summary['carbohydrate'] as num).toDouble().round();
     final fat = (summary['fat'] as num).toDouble().round();
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Daily Calories',
-              style: Theme.of(context).textTheme.bodySmall
-                  ?.copyWith(color: Theme.of(context).hintColor),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '$calories kcal',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary,
+    const target = 2000;
+    final progress = (calories / target).clamp(0.0, 1.0);
+
+    return AppCard(
+      child: Row(
+        children: [
+          SizedBox(
+            width: 88,
+            height: 88,
+            child: CustomPaint(
+              painter: _CircularKcalGauge(
+                progress: progress,
+                color: ActivusColors.primaryBlue,
+                bgColor: ActivusColors.border,
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      '$calories',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: ActivusColors.primaryBlue,
+                      ),
+                    ),
+                    const Text(
+                      'kcal',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: ActivusColors.textTertiary,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 16),
-            Row(
+          ),
+          const SizedBox(width: 20),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _Macro(label: 'Protein', value: '$protein g'),
-                _Macro(label: 'Carbs', value: '$carbs g'),
-                _Macro(label: 'Fat', value: '$fat g'),
+                _MacroRow(
+                  label: 'Protein',
+                  value: '$protein g',
+                  color: ActivusColors.primaryBlue,
+                ),
+                const SizedBox(height: 8),
+                _MacroRow(
+                  label: 'Carbs',
+                  value: '$carbs g',
+                  color: ActivusColors.category2,
+                ),
+                const SizedBox(height: 8),
+                _MacroRow(
+                  label: 'Fat',
+                  value: '$fat g',
+                  color: ActivusColors.warning,
+                ),
               ],
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _Macro extends StatelessWidget {
-  const _Macro({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: Theme.of(context).textTheme.bodySmall),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.titleSmall
-                ?.copyWith(fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -163,8 +194,89 @@ class _Macro extends StatelessWidget {
   }
 }
 
-class _MealCard extends StatelessWidget {
-  const _MealCard({required this.mealEntry, required this.onDelete});
+class _CircularKcalGauge extends CustomPainter {
+  final double progress;
+  final Color color;
+  final Color bgColor;
+
+  _CircularKcalGauge({
+    required this.progress,
+    required this.color,
+    required this.bgColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2 - 6;
+
+    final bgPaint = Paint()
+      ..color = bgColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 6;
+
+    canvas.drawCircle(center, radius, bgPaint);
+
+    final fgPaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 6
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -3.14159265 / 2,
+      2 * 3.14159265 * progress,
+      false,
+      fgPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _CircularKcalGauge oldDelegate) =>
+      oldDelegate.progress != progress;
+}
+
+class _MacroRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+
+  const _MacroRow({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 13,
+            color: ActivusColors.textSecondary,
+          ),
+        ),
+        const Spacer(),
+        Text(
+          value,
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+        ),
+      ],
+    );
+  }
+}
+
+class _MealRow extends StatelessWidget {
+  const _MealRow({required this.mealEntry, required this.onDelete});
 
   final Map<String, dynamic> mealEntry;
   final VoidCallback onDelete;
@@ -175,50 +287,62 @@ class _MealCard extends StatelessWidget {
     final calories = (mealEntry['calories'] as num).toDouble().round();
     final entries = mealEntry['entries'] as List;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    meal.mealType,
-                    style: Theme.of(context).textTheme.titleSmall
-                        ?.copyWith(fontWeight: FontWeight.w600),
+    return AppCard(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          const CategoryIconContainer(
+            icon: Icons.restaurant_outlined,
+            color: ActivusColors.category2,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  meal.mealType,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    entries.isEmpty
-                        ? 'No foods'
-                        : entries
-                              .map(
-                                (e) =>
-                                    '${(e['food'] as Food).name} (${(e['quantity'] as num)} ${e['unit']})',
-                              )
-                              .join(', '),
-                    style: Theme.of(context).textTheme.bodySmall,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  entries.isEmpty
+                      ? 'No foods'
+                      : entries
+                            .map(
+                              (e) =>
+                                  '${(e['food'] as Food).name} (${(e['quantity'] as num)} ${e['unit']})',
+                            )
+                            .join(', '),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: ActivusColors.textSecondary,
                   ),
-                ],
-              ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
-            const SizedBox(width: 8),
-            Text(
-              '$calories kcal',
-              style: Theme.of(context).textTheme.titleSmall
-                  ?.copyWith(color: Theme.of(context).colorScheme.primary),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '$calories kcal',
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: ActivusColors.primaryBlue,
             ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline),
-              onPressed: onDelete,
-            ),
-          ],
-        ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline, size: 18),
+            onPressed: onDelete,
+            padding: EdgeInsets.zero,
+            visualDensity: VisualDensity.compact,
+          ),
+        ],
       ),
     );
   }
@@ -239,35 +363,34 @@ class _MealSuggestionsCard extends StatelessWidget {
       error: (_, _) => const SizedBox.shrink(),
       data: (list) {
         if (list.isEmpty) return const SizedBox.shrink();
-        return Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Meal ideas',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const Icon(Icons.lightbulb_outline, size: 18),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Generated locally from your foods — estimates, not medical advice.',
-                  style: Theme.of(context).textTheme.bodySmall
-                      ?.copyWith(color: Theme.of(context).hintColor),
-                ),
-                const SizedBox(height: 12),
-                for (final s in list) ...[
-                  _SuggestionTile(suggestion: s),
-                  if (s != list.last) const SizedBox(height: 8),
+        return AppCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Meal ideas',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                  ),
+                  const Icon(Icons.lightbulb_outline, size: 18),
                 ],
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Generated locally from your foods — estimates, not medical advice.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: ActivusColors.textTertiary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              for (final s in list) ...[
+                _SuggestionTile(suggestion: s),
+                if (s != list.last) const SizedBox(height: 8),
               ],
-            ),
+            ],
           ),
         );
       },
@@ -287,19 +410,20 @@ class _SuggestionTile extends StatelessWidget {
       children: [
         Text(
           suggestion.mealType,
-          style: Theme.of(context).textTheme.titleSmall
-              ?.copyWith(fontWeight: FontWeight.w600),
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 2),
         Text(
           suggestion.foods.map((f) => f.name).join(' + '),
-          style: Theme.of(context).textTheme.bodyMedium,
+          style: const TextStyle(fontSize: 14),
         ),
         const SizedBox(height: 2),
         Text(
           suggestion.reason,
-          style: Theme.of(context).textTheme.bodySmall
-              ?.copyWith(color: Theme.of(context).hintColor),
+          style: const TextStyle(
+            fontSize: 12,
+            color: ActivusColors.textTertiary,
+          ),
         ),
       ],
     );
