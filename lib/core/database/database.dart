@@ -283,6 +283,42 @@ class AppDatabase extends _$AppDatabase {
         .get();
   }
 
+  // --- Nutrition: Foods ---------------------------------------------------
+  Future<List<Food>> getAllFoods() =>
+      (select(foods)..orderBy([(t) => OrderingTerm.asc(t.name)])).get();
+  Future<Food?> getFoodById(String id) =>
+      (select(foods)..where((t) => t.id.equals(id))).getSingleOrNull();
+  Future<void> insertFood(Food food) => into(foods).insert(food);
+
+  // --- Nutrition: Meals ---------------------------------------------------
+  Future<List<Meal>> getAllMeals() => (select(meals)).get();
+  Future<List<Meal>> getMealsForDay(DateTime day) async {
+    final start = _localStartOfDay(day);
+    final end = _localStartOfDay(day.add(const Duration(days: 1)));
+    return (select(meals)
+          ..where(
+            (t) =>
+                t.date.isBiggerOrEqualValue(start) &
+                t.date.isSmallerThanValue(end),
+          )
+          ..orderBy([(t) => OrderingTerm.asc(t.time)]))
+        .get();
+  }
+
+  Future<Meal?> getMealById(String id) =>
+      (select(meals)..where((t) => t.id.equals(id))).getSingleOrNull();
+  Future<void> insertMeal(Meal meal) => into(meals).insert(meal);
+  Future<void> deleteMeal(String id) =>
+      (delete(meals)..where((t) => t.id.equals(id))).go();
+
+  // --- Nutrition: Meal foods ----------------------------------------------
+  Future<List<MealFood>> getMealFoods(String mealId) =>
+      (select(mealFoods)..where((t) => t.mealId.equals(mealId))).get();
+  Future<void> insertMealFood(MealFood mealFood) =>
+      into(mealFoods).insert(mealFood);
+  Future<void> deleteMealFoods(String mealId) =>
+      (delete(mealFoods)..where((t) => t.mealId.equals(mealId))).go();
+
   DateTime _localStartOfDay(DateTime day) =>
       DateTime(day.year, day.month, day.day).toUtc();
 }

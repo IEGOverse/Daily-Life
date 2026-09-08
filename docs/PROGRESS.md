@@ -4,10 +4,10 @@
 > The repository, Git history, and this file are authoritative. Do not rely on previous chat memory.
 
 ## Current Phase
-Phase 5 — Nutrition (next up)
+Phase 6 — Habits & Analytics (next up)
 
 ## Current Sprint
-Sprint 4 — Finance (COMPLETE)
+Sprint 5 — Nutrition (COMPLETE)
 
 ## Overall Status
 IN PROGRESS
@@ -60,13 +60,13 @@ IN PROGRESS
 ## Verification Results
 - `dart analyze lib/ test/`: No issues found
 - `dart format --output=none lib test`: clean
-- `flutter test`: 86 tests pass (79 prior + 7 Finance)
+- `flutter test`: 92 tests pass (86 prior + 6 Finance-additions/Nutrition)
 - `flutter build bundle`: exit 0
 - `flutter build apk --debug`: exit 0
 - `build_runner`: generates successfully
 
 ## Current Task
-Phase 5 — Nutrition (next approved phase; pending)
+Phase 6 — Habits & Analytics (next approved phase; pending)
 
 ## Phase 4 — Finance Status
 COMPLETE — income/expense transactions, categories, real-time derived balance,
@@ -82,6 +82,19 @@ transaction history, and basic finance statistics delivered and validated.
 - Tests: insert, retrieve, update, delete, income/expense/balance math (incl.
   5,000,000 - 1,500,000 = 3,500,000 example), empty state, Finance screen render
 
+## Phase 5 — Nutrition Status
+COMPLETE — food database, meal records, portion-driven daily summary, and
+meal add flow delivered and validated.
+
+- Domain models: `Food`, `Meal`, `MealFood`
+- Repository: food/meal CRUD + DERIVED daily summary
+  (meal macros = sum of meal_foods × food nutrition per serving)
+- Database: added food/meal/meal_food CRUD + `getMealsForDay` (no schema change)
+- UI: NutritionScreen with daily calories + protein/carbs/fat, meal list,
+  add-meal dialog (meal type, food selection, portion), delete, empty/loading states
+- Tests: food CRUD, meal + portion daily-summary math, day filtering, delete,
+  empty state, Nutrition screen render
+
 ## Phase 2 — Workout Status
 COMPLETE — all five approved tasks delivered and validated.
 
@@ -94,7 +107,7 @@ COMPLETE — all five approved tasks delivered and validated.
 
 ## Known Issues / Decisions Pending
 - Recurrence/occurrence strategy not finalized (Phase 3+).
-- Finance (Phase 4) complete.
+- Finance (Phase 4), Nutrition (Phase 5) complete.
 
 ## Recovery Instructions
 If an agent/session stops unexpectedly:
@@ -106,4 +119,4 @@ If an agent/session stops unexpectedly:
 6. Commit only when the increment is stable.
 
 ## Last Updated
-2026-09-08 Phase 4 Finance complete (income/expense, derived balance, history, stats).
+2026-09-08 Phase 5 Nutrition complete (food db, meals, portion-derived daily summary).
